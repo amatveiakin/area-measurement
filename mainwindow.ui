@@ -26,7 +26,7 @@
          <x>0</x>
          <y>0</y>
          <width>626</width>
-         <height>458</height>
+         <height>439</height>
         </rect>
        </property>
       </widget>
@@ -45,6 +45,7 @@
     <bool>false</bool>
    </attribute>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

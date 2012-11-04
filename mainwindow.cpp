@@ -1,8 +1,11 @@
+// TODO: Always finish polygon by double click, use right mouse button for moving picture (even during drawing)
+
 #include <cmath>
 
 #include <QFileDialog>
 #include <QImageReader>
 #include <QInputDialog>
+#include <QLabel>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPaintEvent>
@@ -11,15 +14,43 @@
 #include "ui_mainwindow.h"
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Misc
+
+const double eps = 1e-10;
+
+
 const QString appName = "AreaMeasurement";
 
 const QString linearUnit = QString::fromUtf8("м");
 const QString squareUnit = linearUnit + QString::fromUtf8("²");
 
+
+static inline ModeKind getModeKind(Mode mode)
+{
+  switch (mode) {
+    case SET_ETALON:
+      return ETALON;
+    case MEASURE_SEGMENT_LENGTH:
+    case MEASURE_POLYLINE_LENGTH:
+    case MEASURE_CLOSED_POLYLINE_LENGTH:
+      return LENGTH;
+    case MEASURE_POLYGON_AREA:
+    case MEASURE_RECTANGLE_AREA:
+      return AREA;
+  }
+  abort();
+}
+
+
 static inline double sqr(double x)
 {
   return x * x;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Length
 
 static inline double segmentLenght(QPoint a, QPoint b)
 {
@@ -33,6 +64,31 @@ static inline double polylineLenght(const QPolygon& polyline)
     length += segmentLenght(polyline[i], polyline[i + 1]);
   return length;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Area
+
+static inline double triangleSignedArea(QPoint a, QPoint b, QPoint c)
+{
+  QPoint p = b - a;
+  QPoint q = c - a;
+  return (p.x() * q.y() - p.y() * q.x()) / 2.0;
+}
+
+static inline double polygonArea(const QPolygon& polyline)
+{
+  double area = 0;
+  if (!polyline.isEmpty() && (polyline.first() - polyline.last()).manhattanLength() > eps)
+    abort();
+  for (int i = 1; i < polyline.size() - 2; i++)
+    area += triangleSignedArea(polyline[0], polyline[i], polyline[i + 1]);
+  return qAbs(area);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Polygon
 
 bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode, bool userFinishes)
 {
@@ -75,21 +131,26 @@ void finishPolygon(QPolygon& polygon, Mode mode)
     case MEASURE_SEGMENT_LENGTH:
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_RECTANGLE_AREA:
-    case MEASURE_POLYGON_AREA:
       return;
 
     case MEASURE_CLOSED_POLYLINE_LENGTH:
+    case MEASURE_POLYGON_AREA:
       polygon.append(polygon.first());
       return;
   }
   abort();
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CanvasWidget
+
 class CanvasWidget : public QWidget
 {
 public:
-  CanvasWidget(const QPixmap* image, QWidget* parent = 0) :
+  CanvasWidget(const QPixmap* image, QLabel* statusLabel, QWidget* parent = 0) :
     QWidget(parent),
+    statusLabel_(statusLabel),
     image_(image)
   {
     etalonStaticPen_ = QColor(0, 150, 0);
@@ -129,7 +190,7 @@ public:
       }
     }
     else {
-      QPolygon drawPolygon = polygon_;
+      QPolygon drawPolygon = getActivePolygon();
       if (polygonFinished_) {
         painter.setPen(staticPen_);
         painter.setBrush(staticFill_);
@@ -137,25 +198,11 @@ public:
       else {
         painter.setPen(activePen_);
         painter.setBrush(activeFill_);
-        addPoint(drawPolygon, pointUnderMouse_, mode_, false);
-        finishPolygon(drawPolygon, mode_);
       }
-
-      switch (mode_) {
-        case SET_ETALON:
-          abort();
-
-        case MEASURE_SEGMENT_LENGTH:
-        case MEASURE_POLYLINE_LENGTH:
-        case MEASURE_CLOSED_POLYLINE_LENGTH:
-          painter.drawPolyline(drawPolygon);
-          break;
-
-        case MEASURE_RECTANGLE_AREA:
-        case MEASURE_POLYGON_AREA:
-          painter.drawPolygon(drawPolygon);
-          break;
-      }
+      if (getModeKind(mode_) == LENGTH)
+        painter.drawPolyline(drawPolygon);
+      else
+        painter.drawPolygon(drawPolygon);
     }
   }
 
@@ -168,37 +215,84 @@ public:
 
     if (mode_ == SET_ETALON) {
       if (nEthalonPointsSet_ >= 2)
-        nEthalonPointsSet_ = 0;
-      if (nEthalonPointsSet_ == 0)
+        resetEtalon();
+
+      if (nEthalonPointsSet_ == 0) {
         etalon_.setP1(newPoint);
+        nEthalonPointsSet_++;
+      }
       else if (nEthalonPointsSet_ == 1) {
         bool ok;
         etalon_.setP2(newPoint);
-        etalonLength_ = QInputDialog::getDouble(this, appName, QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit), 0, 0, 1e9, 3, &ok);
-        if (!ok)
-          nEthalonPointsSet_ = -1;
+        etalonLength_ = QInputDialog::getDouble(this, appName, QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit), 1., 0.001, 1e9, 3, &ok);
+        double etalonPixelLength_ = segmentLenght(etalon_.p1(), etalon_.p2());
+        if (ok && etalonPixelLength_ > eps) {
+          metersPerPixel_ = etalonLength_ / etalonPixelLength_;
+          nEthalonPointsSet_++;
+        }
         else
-          metersPerPixel_ = segmentLenght(etalon_.p1(), etalon_.p2());
+          resetEtalon();
       }
-      nEthalonPointsSet_++;
     }
     else {
       polygonFinished_ = addPoint(polygon_, newPoint, mode_, event->buttons() == Qt::RightButton);
       if (polygonFinished_)
         finishPolygon(polygon_, mode_);
     }
+    updateStatisText();
   }
 
   virtual void mouseMoveEvent(QMouseEvent* event)
   {
     pointUnderMouse_ = event->pos();
+    updateStatisText();
     update();
+  }
+
+  QPolygon getActivePolygon()
+  {
+    QPolygon activePolygon = polygon_;
+    if (!polygonFinished_) {
+      addPoint(activePolygon, pointUnderMouse_, mode_, false);
+      finishPolygon(activePolygon, mode_);
+    }
+    return activePolygon;
+  }
+
+  void resetEtalon()
+  {
+    nEthalonPointsSet_ = 0;
+    etalon_ = QLine();
+    etalonLength_ = 0.;
+    metersPerPixel_ = 0.;
   }
 
   void setMode(Mode newMode)
   {
     mode_ = newMode;
     polygon_.clear();
+    updateStatisText();
+    update();
+  }
+
+  void updateStatisText()
+  {
+    switch (getModeKind(mode_)) {
+      case ETALON: {
+        statusLabel_->setText(etalonLength_ > eps ? QString::fromUtf8("Длина эталона: %1 %2").arg(etalonLength_).arg(linearUnit) : QString());
+        break;
+      }
+      case LENGTH: {
+        double length = polylineLenght(getActivePolygon()) * metersPerPixel_;
+        statusLabel_->setText(length > eps ? QString::fromUtf8("Длина: %1 %2").arg(length).arg(linearUnit) : QString());
+        break;
+      }
+      case AREA: {
+        double area = polygonArea(getActivePolygon()) * sqr(metersPerPixel_);
+        statusLabel_->setText(area > eps ? QString::fromUtf8("Площадь: %1 %2").arg(area).arg(squareUnit) : QString());
+        break;
+      }
+    }
   }
 
 private:
@@ -209,6 +303,7 @@ private:
   QColor activePen_;
   QColor activeFill_;
 
+  QLabel* statusLabel_;
   const QPixmap* image_;
   Mode mode_;
 
@@ -222,6 +317,9 @@ private:
   bool polygonFinished_;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MainWindow
 
 MainWindow::MainWindow(QWidget* parent) :
   QMainWindow(parent),
@@ -264,7 +362,9 @@ MainWindow::MainWindow(QWidget* parent) :
     return;
   }
 
-  canvasWidget = new CanvasWidget(image, this);
+  QLabel* statusLabel = new QLabel(this);
+  ui->statusBar->addWidget(statusLabel);
+  canvasWidget = new CanvasWidget(image, statusLabel, this);
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
 }

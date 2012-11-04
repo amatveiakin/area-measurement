@@ -16,6 +16,13 @@ enum Mode
   MEASURE_POLYGON_AREA
 };
 
+enum ModeKind
+{
+  ETALON,
+  LENGTH,
+  AREA
+};
+
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
