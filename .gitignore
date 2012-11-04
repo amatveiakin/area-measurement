@@ -1,0 +1,9 @@
+Makefile
+AreaMeasurement
+*~
+*.desktop
+*.pro.user
+*.o
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
