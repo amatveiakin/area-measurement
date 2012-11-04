@@ -3,9 +3,18 @@
 
 #include <QMainWindow>
 
-namespace Ui {
-class MainWindow;
-}
+namespace Ui { class MainWindow; }
+class CanvasWidget;
+
+enum Mode
+{
+  SET_ETALON,
+  MEASURE_SEGMENT_LENGTH,
+  MEASURE_POLYLINE_LENGTH,
+  MEASURE_CLOSED_POLYLINE_LENGTH,
+  MEASURE_RECTANGLE_AREA,
+  MEASURE_POLYGON_AREA
+};
 
 class MainWindow : public QMainWindow
 {
@@ -17,6 +26,20 @@ public:
 
 private:
   Ui::MainWindow* ui;
+
+  CanvasWidget* canvasWidget;
+
+  QAction* setEtalonAction;
+  QAction* measureSegmentLengthAction;
+  QAction* measurePolylineLengthAction;
+  QAction* measureClosedPolylineLengthAction;
+  QAction* measureRectangleAreaAction;
+  QAction* measurePolygonAreaAction;
+
+  void setMode(Mode newMode);
+
+private slots:
+  void updateMode(QAction* modeAction);
 };
 
 #endif // MAINWINDOW_H
