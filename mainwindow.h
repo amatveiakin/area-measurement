@@ -31,6 +31,9 @@ public:
   explicit MainWindow(QWidget* parent = 0);
   ~MainWindow();
 
+  void setMode(Mode newMode);
+  void setMeasurementEnabled(bool state);
+
 private:
   Ui::MainWindow* ui;
 
@@ -42,8 +45,6 @@ private:
   QAction* measureClosedPolylineLengthAction;
   QAction* measureRectangleAreaAction;
   QAction* measurePolygonAreaAction;
-
-  void setMode(Mode newMode);
 
 private slots:
   void updateMode(QAction* modeAction);

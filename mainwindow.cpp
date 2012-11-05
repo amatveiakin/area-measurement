@@ -1,5 +1,3 @@
-// TODO: Always finish polygon by double click, use right mouse button for moving picture (even during drawing)
-
 #include <cmath>
 
 #include <QFileDialog>
@@ -9,6 +7,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QScrollBar>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -17,7 +16,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Misc
 
-const double eps = 1e-10;
+const double eps = 1e-6;
 
 
 const QString appName = "AreaMeasurement";
@@ -49,6 +48,20 @@ static inline double sqr(double x)
 }
 
 
+static inline bool fuzzyEq(QPoint a, QPoint b)
+{
+  return (a - b).manhattanLength() <= eps;
+}
+
+
+QColor getFillColor(QColor penColor)
+{
+  QColor fillColor = penColor;
+  fillColor.setAlpha(100);
+  return fillColor;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Length
 
@@ -57,7 +70,7 @@ static inline double segmentLenght(QPoint a, QPoint b)
   return std::sqrt(sqr(a.x() - b.x()) + sqr(a.y() - b.y()));
 }
 
-static inline double polylineLenght(const QPolygon& polyline)
+double polylineLenght(const QPolygon& polyline)
 {
   double length = 0;
   for (int i = 0; i < polyline.size() - 1; i++)
@@ -69,6 +82,33 @@ static inline double polylineLenght(const QPolygon& polyline)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Area
 
+void assertPolygonIsClosed(const QPolygon& polygon)
+{
+  if (!polygon.isEmpty() && !fuzzyEq(polygon.first(), polygon.last()))
+    abort();
+}
+
+static inline bool testSegmentsCross(QPoint a, QPoint b, QPoint c, QPoint d)
+{
+  return QLineF(a, b).intersect(QLineF(c, d), 0) == QLineF::BoundedIntersection;
+}
+
+bool isSelfintersectingPolygon(const QPolygon& polygon)
+{
+  assertPolygonIsClosed(polygon);
+  int n = polygon.size() - 1;  // cut off last vertex
+  for (int i1 = 0; i1 < n; i1++) {
+    int i2 = (i1 + 1) % n;
+    for (int j1 = 0; j1 < n; j1++) {
+      int j2 = (j1 + 1) % n;
+      if (i1 != j1 && i1 != j2 && i2 != j1
+          && testSegmentsCross(polygon[i1], polygon[i2], polygon[j1], polygon[j2]))
+        return true;
+    }
+  }
+  return false;
+}
+
 static inline double triangleSignedArea(QPoint a, QPoint b, QPoint c)
 {
   QPoint p = b - a;
@@ -76,13 +116,12 @@ static inline double triangleSignedArea(QPoint a, QPoint b, QPoint c)
   return (p.x() * q.y() - p.y() * q.x()) / 2.0;
 }
 
-static inline double polygonArea(const QPolygon& polyline)
+double polygonArea(const QPolygon& polygon)
 {
+  assertPolygonIsClosed(polygon);
   double area = 0;
-  if (!polyline.isEmpty() && (polyline.first() - polyline.last()).manhattanLength() > eps)
-    abort();
-  for (int i = 1; i < polyline.size() - 2; i++)
-    area += triangleSignedArea(polyline[0], polyline[i], polyline[i + 1]);
+  for (int i = 1; i < polygon.size() - 2; i++)
+    area += triangleSignedArea(polygon[0], polygon[i], polygon[i + 1]);
   return qAbs(area);
 }
 
@@ -90,23 +129,28 @@ static inline double polygonArea(const QPolygon& polyline)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Polygon
 
-bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode, bool userFinishes)
+bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode)
 {
   switch (mode) {
-    case SET_ETALON:
+    case SET_ETALON: {
       abort();
+    }
 
-    case MEASURE_SEGMENT_LENGTH:
+    case MEASURE_SEGMENT_LENGTH: {
       polygon.append(newPoint);
       return polygon.size() >= 2;
+    }
 
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_CLOSED_POLYLINE_LENGTH:
-    case MEASURE_POLYGON_AREA:
-      polygon.append(newPoint);
-      return userFinishes;
+    case MEASURE_POLYGON_AREA: {
+      bool finish = (!polygon.isEmpty() && polygon.back() == newPoint);
+      if (!finish)
+        polygon.append(newPoint);
+      return finish;
+    }
 
-    case MEASURE_RECTANGLE_AREA:
+    case MEASURE_RECTANGLE_AREA: {
       if (polygon.empty()) {
         polygon.append(newPoint);
         return false;
@@ -115,6 +159,7 @@ bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode, bool userFinishes)
         polygon = QPolygon(QRect(polygon.first(), newPoint), true);
         return true;
       }
+    }
   }
   abort();
 }
@@ -141,6 +186,24 @@ void finishPolygon(QPolygon& polygon, Mode mode)
   abort();
 }
 
+bool isValidPolygon(const QPolygon& polygon, Mode mode)
+{
+  switch (mode) {
+    case SET_ETALON:
+      abort();
+
+    case MEASURE_SEGMENT_LENGTH:
+    case MEASURE_POLYLINE_LENGTH:
+    case MEASURE_CLOSED_POLYLINE_LENGTH:
+    case MEASURE_RECTANGLE_AREA:
+      return true;
+
+    case MEASURE_POLYGON_AREA:
+      return !isSelfintersectingPolygon(polygon);
+  }
+  abort();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CanvasWidget
@@ -148,25 +211,27 @@ void finishPolygon(QPolygon& polygon, Mode mode)
 class CanvasWidget : public QWidget
 {
 public:
-  CanvasWidget(const QPixmap* image, QLabel* statusLabel, QWidget* parent = 0) :
+  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea, QLabel* statusLabel, QWidget* parent = 0) :
     QWidget(parent),
+    mainWindow_(mainWindow),
+    scrollArea_(scrollArea),
     statusLabel_(statusLabel),
     image_(image)
   {
     etalonStaticPen_ = QColor(0, 150, 0);
     etalonActivePen_ = QColor(0, 200, 0);
-    staticPen_  = QColor(0,  50, 240);
-    activePen_  = QColor(0, 100, 240);
-    staticFill_ = staticPen_;
-    staticFill_.setAlpha(100);
-    activeFill_ = activePen_;
-    activeFill_.setAlpha(100);
+    staticPen_  = QColor(  0,  50, 240);
+    activePen_  = QColor(  0, 100, 240);
+    errorPen_   = QColor(255,   0,   0);
+    staticFill_ = getFillColor(staticPen_);
+    activeFill_ = getFillColor(activePen_);
+    errorFill_  = getFillColor(errorPen_);
 
     setFixedSize(image_->size());
     setMouseTracking(true);
     mode_ = SET_ETALON;
-    nEthalonPointsSet_ = 0;
-    polygonFinished_ = true;
+    resetEtalon();
+    resetPolygon();
   }
 
   ~CanvasWidget()
@@ -190,8 +255,12 @@ public:
       }
     }
     else {
-      QPolygon drawPolygon = getActivePolygon();
-      if (polygonFinished_) {
+      QPolygon activePolygon = getActivePolygon();
+      if (!isValidPolygon(activePolygon, mode_)) {
+        painter.setPen(errorPen_);
+        painter.setBrush(errorFill_);
+      }
+      else if (polygonFinished_) {
         painter.setPen(staticPen_);
         painter.setBrush(staticFill_);
       }
@@ -200,60 +269,79 @@ public:
         painter.setBrush(activeFill_);
       }
       if (getModeKind(mode_) == LENGTH)
-        painter.drawPolyline(drawPolygon);
+        painter.drawPolyline(activePolygon);
       else
-        painter.drawPolygon(drawPolygon);
+        painter.drawPolygon(activePolygon);
     }
   }
 
   virtual void mousePressEvent(QMouseEvent* event)
   {
-    QPoint newPoint = event->pos();
+    if (event->buttons() == Qt::LeftButton) {
+      QPoint newPoint = event->pos();
 
-    if (polygonFinished_)
-      polygon_.clear();
-
-    if (mode_ == SET_ETALON) {
-      if (nEthalonPointsSet_ >= 2)
-        resetEtalon();
-
-      if (nEthalonPointsSet_ == 0) {
-        etalon_.setP1(newPoint);
-        nEthalonPointsSet_++;
-      }
-      else if (nEthalonPointsSet_ == 1) {
-        bool ok;
-        etalon_.setP2(newPoint);
-        etalonLength_ = QInputDialog::getDouble(this, appName, QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit), 1., 0.001, 1e9, 3, &ok);
-        double etalonPixelLength_ = segmentLenght(etalon_.p1(), etalon_.p2());
-        if (ok && etalonPixelLength_ > eps) {
-          metersPerPixel_ = etalonLength_ / etalonPixelLength_;
-          nEthalonPointsSet_++;
-        }
-        else
-          resetEtalon();
-      }
-    }
-    else {
-      polygonFinished_ = addPoint(polygon_, newPoint, mode_, event->buttons() == Qt::RightButton);
       if (polygonFinished_)
-        finishPolygon(polygon_, mode_);
+        resetPolygon();
+
+      if (mode_ == SET_ETALON) {
+        if (nEthalonPointsSet_ >= 2)
+          resetEtalon();
+
+        if (nEthalonPointsSet_ == 0) {
+          etalon_.setP1(newPoint);
+          nEthalonPointsSet_ = 1;
+        }
+        else if (nEthalonPointsSet_ == 1) {
+          bool ok;
+          etalon_.setP2(newPoint);
+          etalonLength_ = QInputDialog::getDouble(this, appName, QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit), 1., 0.001, 1e9, 3, &ok);
+          double etalonPixelLength_ = segmentLenght(etalon_.p1(), etalon_.p2());
+          if (ok && etalonPixelLength_ > eps) {
+            metersPerPixel_ = etalonLength_ / etalonPixelLength_;
+            nEthalonPointsSet_ = 2;
+            mainWindow_->setMeasurementEnabled(true);
+          }
+          else
+            resetEtalon();
+        }
+      }
+      else {
+        polygonFinished_ = addPoint(polygon_, newPoint, mode_);
+        if (polygonFinished_)
+          finishPolygon(polygon_, mode_);
+      }
+      updateAll();
     }
-    updateStatisText();
+    else if (event->buttons() == Qt::RightButton) {
+      scrollStartPoint_ = event->globalPos();
+      scrollStartHValue_ = scrollArea_->horizontalScrollBar()->value();
+      scrollStartVValue_ = scrollArea_->verticalScrollBar()  ->value();
+    }
   }
 
   virtual void mouseMoveEvent(QMouseEvent* event)
   {
-    pointUnderMouse_ = event->pos();
-    updateStatisText();
-    update();
+    if (event->buttons() == Qt::NoButton) {
+      pointUnderMouse_ = event->pos();
+      updateAll();
+    }
+    else if (event->buttons() == Qt::RightButton) {
+      QPoint scrollBy = event->globalPos() - scrollStartPoint_;
+      scrollArea_->horizontalScrollBar()->setValue(scrollStartHValue_ - scrollBy.x());
+      scrollArea_->verticalScrollBar()  ->setValue(scrollStartVValue_ - scrollBy.y());
+    }
   }
+
+//  virtual void wheelEvent(QWheelEvent* event)
+//  {
+//    // TODO: Wheel zoom
+//  }
 
   QPolygon getActivePolygon()
   {
     QPolygon activePolygon = polygon_;
     if (!polygonFinished_) {
-      addPoint(activePolygon, pointUnderMouse_, mode_, false);
+      addPoint(activePolygon, pointUnderMouse_, mode_);
       finishPolygon(activePolygon, mode_);
     }
     return activePolygon;
@@ -265,17 +353,23 @@ public:
     etalon_ = QLine();
     etalonLength_ = 0.;
     metersPerPixel_ = 0.;
+    mainWindow_->setMeasurementEnabled(false);
+  }
+
+  void resetPolygon()
+  {
+    polygon_.clear();
+    polygonFinished_ = false;
   }
 
   void setMode(Mode newMode)
   {
     mode_ = newMode;
     polygon_.clear();
-    updateStatisText();
-    update();
+    updateAll();
   }
 
-  void updateStatisText()
+  void updateStatusText()
   {
     switch (getModeKind(mode_)) {
       case ETALON: {
@@ -288,11 +382,23 @@ public:
         break;
       }
       case AREA: {
-        double area = polygonArea(getActivePolygon()) * sqr(metersPerPixel_);
-        statusLabel_->setText(area > eps ? QString::fromUtf8("Площадь: %1 %2").arg(area).arg(squareUnit) : QString());
+        QPolygon activePolygon = getActivePolygon();
+        if (isValidPolygon(activePolygon, mode_)) {
+          double area = polygonArea(activePolygon) * sqr(metersPerPixel_);
+          statusLabel_->setText(area > eps ? QString::fromUtf8("Площадь: %1 %2").arg(area).arg(squareUnit) : QString());
+        }
+        else {
+          statusLabel_->setText(QString::fromUtf8("Многоугольник не должен самопересекаться!"));
+        }
         break;
       }
     }
+  }
+
+  void updateAll()
+  {
+    updateStatusText();
+    update();
   }
 
 private:
@@ -302,7 +408,11 @@ private:
   QColor staticFill_;
   QColor activePen_;
   QColor activeFill_;
+  QColor errorPen_;
+  QColor errorFill_;
 
+  MainWindow* mainWindow_;
+  QScrollArea* scrollArea_;
   QLabel* statusLabel_;
   const QPixmap* image_;
   Mode mode_;
@@ -315,6 +425,10 @@ private:
   QPoint pointUnderMouse_;
   QPolygon polygon_;
   bool polygonFinished_;
+
+  QPoint scrollStartPoint_;
+  int scrollStartHValue_;
+  int scrollStartVValue_;
 };
 
 
@@ -340,7 +454,8 @@ MainWindow::MainWindow(QWidget* parent) :
     action->setCheckable(true);
   setEtalonAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
-  connect (modeActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
+  setMeasurementEnabled(false);
+  connect(modeActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
 
   QList<QByteArray> supportedFormatsList = QImageReader::supportedImageFormats();
   QString supportedFormatsString;
@@ -349,8 +464,8 @@ MainWindow::MainWindow(QWidget* parent) :
 
   QString imageFile = QFileDialog::getOpenFileName (this, QString::fromUtf8("Укажите путь к изображению — ") + appName,
                                                     QString(), QString::fromUtf8("Все изображения (%1)").arg(supportedFormatsString));
-  if (imageFile.isEmpty ()) {
-    close(); // ???
+  if (imageFile.isEmpty()) {
+    exit(EXIT_SUCCESS);
     return;
   }
 
@@ -358,13 +473,13 @@ MainWindow::MainWindow(QWidget* parent) :
   if (!image->load(imageFile)) {
     QMessageBox::warning(this, appName, QString::fromUtf8("Не могу открыть изображение \"%1\".").arg(imageFile));
     delete image;
-    close(); // ???
+    exit(EXIT_SUCCESS);
     return;
   }
 
   QLabel* statusLabel = new QLabel(this);
   ui->statusBar->addWidget(statusLabel);
-  canvasWidget = new CanvasWidget(image, statusLabel, this);
+  canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, statusLabel, this);
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
 }
@@ -379,19 +494,28 @@ void MainWindow::setMode(Mode newMode)
   canvasWidget->setMode(newMode);
 }
 
+void MainWindow::setMeasurementEnabled(bool state)
+{
+  measureSegmentLengthAction       ->setEnabled(state);
+  measurePolylineLengthAction      ->setEnabled(state);
+  measureClosedPolylineLengthAction->setEnabled(state);
+  measureRectangleAreaAction       ->setEnabled(state);
+  measurePolygonAreaAction         ->setEnabled(state);
+}
+
 void MainWindow::updateMode(QAction* modeAction)
 {
   if (modeAction == setEtalonAction)
-    return setMode (SET_ETALON);
+    return setMode(SET_ETALON);
   if (modeAction == measureSegmentLengthAction)
-    return setMode (MEASURE_SEGMENT_LENGTH);
+    return setMode(MEASURE_SEGMENT_LENGTH);
   if (modeAction == measurePolylineLengthAction)
-    return setMode (MEASURE_POLYLINE_LENGTH);
+    return setMode(MEASURE_POLYLINE_LENGTH);
   if (modeAction == measureClosedPolylineLengthAction)
-    return setMode (MEASURE_CLOSED_POLYLINE_LENGTH);
+    return setMode(MEASURE_CLOSED_POLYLINE_LENGTH);
   if (modeAction == measureRectangleAreaAction)
-    return setMode (MEASURE_RECTANGLE_AREA);
+    return setMode(MEASURE_RECTANGLE_AREA);
   if (modeAction == measurePolygonAreaAction)
-    return setMode (MEASURE_POLYGON_AREA);
+    return setMode(MEASURE_POLYGON_AREA);
   abort();
 }
