@@ -53,6 +53,10 @@ MainWindow::MainWindow(QWidget* parent) :
   }
 
   QLabel* statusLabel = new QLabel(this);
+  QFont labelFont = statusLabel->font();
+  int newSize = QFontInfo(labelFont).pointSize() * 1.5;  // In contrast to ``labelFont.pointSize()'' it always works
+  labelFont.setPointSize(newSize);
+  statusLabel->setFont(labelFont);
   ui->statusBar->addWidget(statusLabel);
   canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, statusLabel, this);
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
