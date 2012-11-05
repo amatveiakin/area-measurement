@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget* parent) :
 {
   ui->setupUi(this);
   setAttribute(Qt::WA_QuitOnClose);
+  setWindowState(windowState() | Qt::WindowMaximized);
   setWindowTitle(appName());
 
   QActionGroup* modeActionGroup = new QActionGroup(this);
