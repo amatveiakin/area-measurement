@@ -15,6 +15,9 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="margin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QScrollArea" name="containingScrollArea">
       <property name="widgetResizable">
@@ -25,8 +28,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>626</width>
-         <height>439</height>
+         <width>634</width>
+         <height>449</height>
         </rect>
        </property>
       </widget>
