@@ -444,16 +444,18 @@ MainWindow::MainWindow(QWidget* parent) :
   setWindowTitle(appName);
 
   QActionGroup* modeActionGroup = new QActionGroup(this);
-  setEtalonAction                   = new QAction(QString::fromUtf8("Задание эталона"),                    modeActionGroup);
-  measureSegmentLengthAction        = new QAction(QString::fromUtf8("Измерение длин отрезков"),            modeActionGroup);
-  measurePolylineLengthAction       = new QAction(QString::fromUtf8("Измерение длин кривых"),              modeActionGroup);
-  measureClosedPolylineLengthAction = new QAction(QString::fromUtf8("Измерение длин замкнутых кривых"),    modeActionGroup);
-  measureRectangleAreaAction        = new QAction(QString::fromUtf8("Измерение площадей прямоугольников"), modeActionGroup);
-  measurePolygonAreaAction          = new QAction(QString::fromUtf8("Измерение площадей многоугольников"), modeActionGroup);
+  setEtalonAction                   = new QAction(QIcon(":/pictures/etalon.png"),                 QString::fromUtf8("Задание эталона"),                    modeActionGroup);
+  measureSegmentLengthAction        = new QAction(QIcon(":/pictures/segment_length.svg"),         QString::fromUtf8("Измерение длин отрезков"),            modeActionGroup);
+  measurePolylineLengthAction       = new QAction(QIcon(":/pictures/polyline_length.svg"),        QString::fromUtf8("Измерение длин кривых"),              modeActionGroup);
+  measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.svg"), QString::fromUtf8("Измерение длин замкнутых кривых"),    modeActionGroup);
+  measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.svg"),         QString::fromUtf8("Измерение площадей прямоугольников"), modeActionGroup);
+  measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.svg"),           QString::fromUtf8("Измерение площадей многоугольников"), modeActionGroup);
   foreach (QAction* action, modeActionGroup->actions())
     action->setCheckable(true);
   setEtalonAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
+  ui->mainToolBar->setIconSize(QSize(32, 32));
+  ui->mainToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
   setMeasurementEnabled(false);
   connect(modeActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
 
