@@ -3,25 +3,10 @@
 
 #include <QMainWindow>
 
+#include "modes.h"
+
 namespace Ui { class MainWindow; }
 class CanvasWidget;
-
-enum Mode
-{
-  SET_ETALON,
-  MEASURE_SEGMENT_LENGTH,
-  MEASURE_POLYLINE_LENGTH,
-  MEASURE_CLOSED_POLYLINE_LENGTH,
-  MEASURE_RECTANGLE_AREA,
-  MEASURE_POLYGON_AREA
-};
-
-enum ModeKind
-{
-  ETALON,
-  LENGTH,
-  AREA
-};
 
 class MainWindow : public QMainWindow
 {
@@ -30,6 +15,8 @@ class MainWindow : public QMainWindow
 public:
   explicit MainWindow(QWidget* parent = 0);
   ~MainWindow();
+
+  QString appName() const;
 
   void setMode(Mode newMode);
   void setMeasurementEnabled(bool state);
