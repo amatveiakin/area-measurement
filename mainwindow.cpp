@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget* parent) :
   setEtalonAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
   ui->mainToolBar->setIconSize(QSize(32, 32));
-  ui->mainToolBar->setContextMenuPolicy(Qt::CustomContextMenu);
+  ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
   setMeasurementEnabled(false);
   connect(modeActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
 
