@@ -1,10 +1,10 @@
 <RCC>
     <qresource prefix="/">
-        <file>pictures/closed_polyline_length.svg</file>
-        <file>pictures/polygon_area.svg</file>
-        <file>pictures/polyline_length.svg</file>
-        <file>pictures/rectangle_area.svg</file>
-        <file>pictures/segment_length.svg</file>
+        <file>pictures/closed_polyline_length.png</file>
         <file>pictures/etalon.png</file>
+        <file>pictures/polygon_area.png</file>
+        <file>pictures/polyline_length.png</file>
+        <file>pictures/rectangle_area.png</file>
+        <file>pictures/segment_length.png</file>
     </qresource>
 </RCC>
