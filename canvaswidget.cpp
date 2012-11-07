@@ -145,6 +145,14 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
 }
 
 
+void CanvasWidget::setMode(Mode newMode)
+{
+  mode_ = newMode;
+  polygon_.clear();
+  updateAll();
+}
+
+
 QPolygon CanvasWidget::getActivePolygon() const
 {
   QPolygon activePolygon = polygon_;
@@ -171,12 +179,6 @@ void CanvasWidget::resetPolygon()
   polygonFinished_ = false;
 }
 
-void CanvasWidget::setMode(Mode newMode)
-{
-  mode_ = newMode;
-  polygon_.clear();
-  updateAll();
-}
 
 
 void CanvasWidget::updateStatusText()

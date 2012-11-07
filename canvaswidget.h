@@ -20,14 +20,7 @@ public:
   virtual void mouseMoveEvent(QMouseEvent* event);
 //  virtual void wheelEvent(QWheelEvent* event)   // TODO: Wheel zoom
 
-  QPolygon getActivePolygon() const;
-
-  void resetEtalon();
-  void resetPolygon();
   void setMode(Mode newMode);
-
-  void updateStatusText();
-  void updateAll();
 
 private:
   QColor etalonStaticPen_;
@@ -57,6 +50,15 @@ private:
   QPoint scrollStartPoint_;
   int scrollStartHValue_;
   int scrollStartVValue_;
+
+private:
+  QPolygon getActivePolygon() const;
+
+  void resetEtalon();
+  void resetPolygon();
+
+  void updateStatusText();
+  void updateAll();
 };
 
 #endif // CANVASWIDGET_H
