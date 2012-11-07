@@ -10,6 +10,16 @@
 #include "polygon_math.h"
 
 
+const int rulerMargin         = 16;
+const int rulerThickness      = 2;
+const int rulerFrameThickness = 1;
+const int rulerTextMargin     = 3;
+const int rulerSerifsSize     = 8;
+const int rulerMaxLength      = 180;
+const int rulerMinLength      = 40;
+const QColor rulerBodyColor   = Qt::black;
+const QColor rulerFrameColor  = Qt::white;
+
 const QString linearUnit = QString::fromUtf8("м");
 const QString squareUnit = linearUnit + QString::fromUtf8("²");
 
@@ -85,6 +95,8 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
     else
       painter.drawPolygon(activePolygon);
   }
+
+  drawRuler(painter, event->rect());
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent* event)
@@ -161,6 +173,51 @@ QPolygon CanvasWidget::getActivePolygon() const
     finishPolygon(activePolygon, mode_);
   }
   return activePolygon;
+}
+
+
+void CanvasWidget::drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor)
+{
+  foreach (const QRect& rect, objects)
+    painter.fillRect(rect.adjusted(-frameThickness, -frameThickness, frameThickness, frameThickness), frameColor);
+  foreach (const QRect& rect, objects)
+    painter.fillRect(rect, objectsColor);
+}
+
+void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
+{
+  int maxLength = qMin(rulerMaxLength, rect.width() - 2 * rulerMargin);
+  if (nEthalonPointsSet_ != 2 || maxLength < rulerMinLength)
+    return;
+
+  double pixelLengthF;
+  double metersLength;
+  double base = 1e10;
+  while (true) {
+    if ((pixelLengthF = (metersLength = base * 5.) / metersPerPixel_) < maxLength)
+      break;
+    if ((pixelLengthF = (metersLength = base * 2.) / metersPerPixel_) < maxLength)
+      break;
+    if ((pixelLengthF = (metersLength = base * 1.) / metersPerPixel_) < maxLength)
+      break;
+    base /= 10.;
+  }
+  int pixelLength = pixelLengthF;
+
+  QList<QRect> ruler;
+  int rulerLeft = rect.left()   + rulerMargin;
+  int rulerY    = rect.bottom() - rulerMargin;
+  ruler.append(QRect(rulerLeft, rulerY - rulerThickness / 2, pixelLength, rulerThickness));
+  ruler.append(QRect(rulerLeft - rulerThickness, rulerY - rulerSerifsSize / 2, rulerThickness, rulerSerifsSize));
+  ruler.append(QRect(rulerLeft + pixelLength        , rulerY - rulerSerifsSize / 2, rulerThickness, rulerSerifsSize));
+  drawFramed(painter, ruler, rulerFrameThickness, rulerBodyColor, rulerFrameColor);
+
+  QString rulerLabel = QString::number(metersLength) + linearUnit;
+  QRect labelRect = painter.fontMetrics().boundingRect(rulerLabel);
+  QPoint labelPos(rulerLeft + rulerFrameThickness + rulerTextMargin, rulerY - rulerThickness / 2 - rulerFrameThickness - rulerTextMargin - painter.fontMetrics().descent());
+  painter.fillRect(labelRect.translated(labelPos), rulerFrameColor);
+  painter.setPen(rulerBodyColor);
+  painter.drawText(labelPos, rulerLabel);
 }
 
 

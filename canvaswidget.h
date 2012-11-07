@@ -54,6 +54,9 @@ private:
 private:
   QPolygon getActivePolygon() const;
 
+  void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
+  void drawRuler(QPainter& painter, const QRect& rect);
+
   void resetEtalon();
   void resetPolygon();
 
