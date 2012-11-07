@@ -24,7 +24,7 @@ double segmentLenght(QPoint a, QPoint b)
   return std::sqrt(sqr(a.x() - b.x()) + sqr(a.y() - b.y()));
 }
 
-double polylineLenght(const QPolygon& polyline)
+double polylineLength(const QPolygon& polyline)
 {
   double length = 0;
   for (int i = 0; i < polyline.size() - 1; i++)

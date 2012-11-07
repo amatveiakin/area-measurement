@@ -53,13 +53,16 @@ MainWindow::MainWindow(QWidget* parent) :
     return;
   }
 
+  QFont statusBarFont = ui->statusBar->font();
+  int newSize = QFontInfo(statusBarFont).pointSize() * 1.5;  // In contrast to ``labelFont.pointSize()'' it always works
+  statusBarFont.setPointSize(newSize);
+  ui->statusBar->setFont(statusBarFont);
+  QLabel* scaleLabel  = new QLabel(this);
   QLabel* statusLabel = new QLabel(this);
-  QFont labelFont = statusLabel->font();
-  int newSize = QFontInfo(labelFont).pointSize() * 1.5;  // In contrast to ``labelFont.pointSize()'' it always works
-  labelFont.setPointSize(newSize);
-  statusLabel->setFont(labelFont);
+  ui->statusBar->addPermanentWidget(scaleLabel);
   ui->statusBar->addWidget(statusLabel);
-  canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, statusLabel, this);
+
+  canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, scaleLabel, statusLabel, this);
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
 }

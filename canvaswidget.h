@@ -9,16 +9,13 @@ class MainWindow;
 class QLabel;
 class QScrollArea;
 
+// in all variables ``original'' prefix means ``in original scale''
+
 class CanvasWidget : public QWidget
 {
 public:
-  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea, QLabel* statusLabel, QWidget* parent = 0);
+  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea, QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
   ~CanvasWidget();
-
-  virtual void paintEvent(QPaintEvent* event);
-  virtual void mousePressEvent(QMouseEvent* event);
-  virtual void mouseMoveEvent(QMouseEvent* event);
-//  virtual void wheelEvent(QWheelEvent* event)   // TODO: Wheel zoom
 
   void setMode(Mode newMode);
 
@@ -34,17 +31,23 @@ private:
 
   MainWindow* mainWindow_;
   QScrollArea* scrollArea_;
+  QLabel* scaleLabel_;
   QLabel* statusLabel_;
-  const QPixmap* image_;
+  const QPixmap* originalImage_;  // Owner
+  QPixmap image_;
   Mode mode_;
+  QList<double> acceptableScales_;
+  int iScale_;
+  double scale_;
 
   int nEthalonPointsSet_;
-  QLine etalon_;
-  double etalonLength_;
+  QLine originalEtalon_;
+  double etalonMetersLength_;
+  double originalMetersPerPixel_;
   double metersPerPixel_;
 
-  QPoint pointUnderMouse_;
-  QPolygon polygon_;
+  QPoint originalPointUnderMouse_;
+  QPolygon originalPolygon_;
   bool polygonFinished_;
 
   QPoint scrollStartPoint_;
@@ -52,13 +55,19 @@ private:
   int scrollStartVValue_;
 
 private:
-  QPolygon getActivePolygon() const;
+  virtual void paintEvent(QPaintEvent* event);
+  virtual void mousePressEvent(QMouseEvent* event);
+  virtual void mouseMoveEvent(QMouseEvent* event);
+  virtual bool eventFilter(QObject* object, QEvent* event);
+
+  QPolygon getActivePolygon(bool scaled) const;
 
   void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
   void drawRuler(QPainter& painter, const QRect& rect);
 
   void resetEtalon();
   void resetPolygon();
+  void scaleChanged();
 
   void updateStatusText();
   void updateAll();
