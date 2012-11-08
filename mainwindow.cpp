@@ -24,14 +24,17 @@ MainWindow::MainWindow(QWidget* parent) :
   measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.png"), QString::fromUtf8("Измерение длин замкнутых кривых"),    modeActionGroup);
   measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"), modeActionGroup);
   measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"), modeActionGroup);
+  toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"), this);
   foreach (QAction* action, modeActionGroup->actions())
     action->setCheckable(true);
   setEtalonAction->setChecked(true);
+  toggleRulerAction->setCheckable(true);
+  toggleRulerAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
+  ui->mainToolBar->addAction(toggleRulerAction);
   ui->mainToolBar->setIconSize(QSize(32, 32));
   ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
   setMeasurementEnabled(false);
-  connect(modeActionGroup, SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
 
   QList<QByteArray> supportedFormatsList = QImageReader::supportedImageFormats();
   QString supportedFormatsString;
@@ -65,6 +68,10 @@ MainWindow::MainWindow(QWidget* parent) :
   canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, scaleLabel, statusLabel, this);
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
+
+  connect(modeActionGroup,    SIGNAL(triggered(QAction*)), this,         SLOT(updateMode(QAction*)));
+  connect(toggleRulerAction,  SIGNAL(toggled(bool)),       canvasWidget, SLOT(toggleRuler(bool)));
+  canvasWidget->toggleRuler(toggleRulerAction->isChecked());
 }
 
 MainWindow::~MainWindow()

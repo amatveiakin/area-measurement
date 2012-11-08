@@ -6,5 +6,6 @@
         <file>pictures/polyline_length.png</file>
         <file>pictures/rectangle_area.png</file>
         <file>pictures/segment_length.png</file>
+        <file>pictures/toggle_ruler.png</file>
     </qresource>
 </RCC>

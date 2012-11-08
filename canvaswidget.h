@@ -13,11 +13,16 @@ class QScrollArea;
 
 class CanvasWidget : public QWidget
 {
+  Q_OBJECT
+
 public:
   CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea, QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
   ~CanvasWidget();
 
   void setMode(Mode newMode);
+
+public slots:
+  void toggleRuler(bool showRuler);
 
 private:
   QColor etalonStaticPen_;
@@ -35,7 +40,10 @@ private:
   QLabel* statusLabel_;
   const QPixmap* originalImage_;  // Owner
   QPixmap image_;
+
   Mode mode_;
+  bool showRuler_;
+
   QList<double> acceptableScales_;
   int iScale_;
   double scale_;

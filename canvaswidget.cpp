@@ -57,6 +57,7 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   scrollArea_->viewport()->installEventFilter(this);
   setMouseTracking(true);
   mode_ = SET_ETALON;
+  showRuler_ = false;
   resetEtalon();
   resetPolygon();
   scaleChanged();
@@ -103,7 +104,8 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
       painter.drawPolygon(activePolygon);
   }
 
-  drawRuler(painter, event->rect());
+  if (showRuler_)
+    drawRuler(painter, event->rect());
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent* event)
@@ -189,6 +191,13 @@ void CanvasWidget::setMode(Mode newMode)
   mode_ = newMode;
   originalPolygon_.clear();
   updateAll();
+}
+
+
+void CanvasWidget::toggleRuler(bool showRuler)
+{
+  showRuler_ = showRuler;
+  update();
 }
 
 

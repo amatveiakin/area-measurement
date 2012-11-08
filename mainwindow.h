@@ -32,6 +32,7 @@ private:
   QAction* measureClosedPolylineLengthAction;
   QAction* measureRectangleAreaAction;
   QAction* measurePolygonAreaAction;
+  QAction* toggleRulerAction;
 
 private slots:
   void updateMode(QAction* modeAction);
