@@ -251,7 +251,7 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
   ruler.append(QRect(rulerLeft + pixelLength   , rulerY - rulerSerifsSize / 2, rulerThickness, rulerSerifsSize));
   drawFramed(painter, ruler, rulerFrameThickness, rulerBodyColor, rulerFrameColor);
 
-  QString rulerLabel = QString::number(metersLength) + linearUnit;
+  QString rulerLabel = QString::number(metersLength) + " " + linearUnit;
   QRect labelRect = painter.fontMetrics().boundingRect(rulerLabel);
   QPoint labelPos(rulerLeft + rulerFrameThickness + rulerTextMargin, rulerY - rulerThickness / 2 - rulerFrameThickness - rulerTextMargin - painter.fontMetrics().descent());
   painter.fillRect(labelRect.translated(labelPos), rulerFrameColor);
