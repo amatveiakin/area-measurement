@@ -2,6 +2,7 @@
 #include <QImageReader>
 #include <QLabel>
 #include <QMessageBox>
+#include <QTimer>
 
 #include "canvaswidget.h"
 #include "mainwindow.h"
@@ -44,7 +45,7 @@ MainWindow::MainWindow(QWidget* parent) :
   QString imageFile = QFileDialog::getOpenFileName (this, QString::fromUtf8("Укажите путь к изображению — ") + appName(),
                                                     QString(), QString::fromUtf8("Все изображения (%1)").arg(supportedFormatsString));
   if (imageFile.isEmpty()) {
-    exit(EXIT_SUCCESS);
+    QTimer::singleShot(0, this, SLOT(close()));
     return;
   }
 
@@ -52,7 +53,7 @@ MainWindow::MainWindow(QWidget* parent) :
   if (!image->load(imageFile)) {
     QMessageBox::warning(this, appName(), QString::fromUtf8("Не могу открыть изображение \"%1\".").arg(imageFile));
     delete image;
-    exit(EXIT_SUCCESS);
+    QTimer::singleShot(0, this, SLOT(close()));
     return;
   }
 
