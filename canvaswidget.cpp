@@ -51,8 +51,11 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   activeFill_ = getFillColor(activePen_);
   errorFill_  = getFillColor(errorPen_);
 
-  acceptableScales_ << 0.05 << 0.07 << 0.1 << 0.17 << 0.25 << 0.33 << 0.5 << 0.67 << 1. << 1.5 << 2. << 3. << 4.;
-  iScale_ = 8;
+  acceptableScales_ << 0.01 << 0.015 << 0.02 << 0.025 << 0.03 << 0.04 << 0.05 << 0.06 << 0.07 << 0.08 << 0.09;
+  acceptableScales_ << 0.10 << 0.12 << 0.14 << 0.17 << 0.20 << 0.23 << 0.26 << 0.30 << 0.35 << 0.40 << 0.45;
+  acceptableScales_ << 0.50 << 0.60 << 0.70 << 0.80 << 0.90;
+  acceptableScales_ << 1.00 << 1.25 << 1.50 << 1.75 << 2.00 << 2.50 << 3.00 << 4.00;
+  iScale_ = acceptableScales_.indexOf(1.00);
 
   scrollArea_->viewport()->installEventFilter(this);
   setMouseTracking(true);
