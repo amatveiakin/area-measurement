@@ -33,7 +33,9 @@ MainWindow::MainWindow(QWidget* parent) :
   toggleRulerAction->setCheckable(true);
   toggleRulerAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
+  ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(toggleRulerAction);
+  ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(aboutAction);
   ui->mainToolBar->setIconSize(QSize(32, 32));
   ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
