@@ -7,5 +7,6 @@
         <file>pictures/rectangle_area.png</file>
         <file>pictures/segment_length.png</file>
         <file>pictures/toggle_ruler.png</file>
+        <file>pictures/about.png</file>
     </qresource>
 </RCC>

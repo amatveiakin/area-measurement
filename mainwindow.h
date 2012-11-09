@@ -33,9 +33,11 @@ private:
   QAction* measureRectangleAreaAction;
   QAction* measurePolygonAreaAction;
   QAction* toggleRulerAction;
+  QAction* aboutAction;
 
 private slots:
   void updateMode(QAction* modeAction);
+  void showAbout();
 };
 
 #endif // MAINWINDOW_H

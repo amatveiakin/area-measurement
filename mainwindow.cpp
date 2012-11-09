@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget* parent) :
   measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"), modeActionGroup);
   measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"), modeActionGroup);
   toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"), this);
+  aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                  QString::fromUtf8("О программе"),                        this);
   foreach (QAction* action, modeActionGroup->actions())
     action->setCheckable(true);
   setEtalonAction->setChecked(true);
@@ -33,6 +34,7 @@ MainWindow::MainWindow(QWidget* parent) :
   toggleRulerAction->setChecked(true);
   ui->mainToolBar->addActions(modeActionGroup->actions());
   ui->mainToolBar->addAction(toggleRulerAction);
+  ui->mainToolBar->addAction(aboutAction);
   ui->mainToolBar->setIconSize(QSize(32, 32));
   ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
   setMeasurementEnabled(false);
@@ -72,6 +74,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
   connect(modeActionGroup,    SIGNAL(triggered(QAction*)), this,         SLOT(updateMode(QAction*)));
   connect(toggleRulerAction,  SIGNAL(toggled(bool)),       canvasWidget, SLOT(toggleRuler(bool)));
+  connect(aboutAction,        SIGNAL(triggered()),         this,         SLOT(showAbout()));
   canvasWidget->toggleRuler(toggleRulerAction->isChecked());
 }
 
@@ -116,4 +119,13 @@ void MainWindow::updateMode(QAction* modeAction)
   if (modeAction == measurePolygonAreaAction)
     return setMode(MEASURE_POLYGON_AREA);
   abort();
+}
+
+void MainWindow::showAbout()
+{
+  QString aboutText = QString::fromUtf8("Программа %1 предназначена для измерения длин и площадей объектов на чертежах, картах и пр.\n\n"
+                                        "Автор — Матвеякин Андрей.\n\n"
+                                        "Программа распространяется свободно по принципу «как есть»: автор не несёт ответственности за возможный ущерб, нанесённый в результате работы приложения."
+                                        ).arg(appName());
+  QMessageBox::about(this, QString::fromUtf8("О программе %1").arg(appName()), aboutText);
 }
