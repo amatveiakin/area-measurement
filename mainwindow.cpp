@@ -91,6 +91,19 @@ QString MainWindow::appName() const
   return "AreaMeasurement";
 }
 
+QList<int> MainWindow::appVersion() const
+{
+  return QList<int>() << 0 << 3;
+}
+
+QString MainWindow::appVersionString() const
+{
+  QString versionString;
+  foreach (int x, appVersion())
+    versionString += QString::number(x) + '.';
+  return versionString.left(versionString.length() - 1);
+}
+
 
 void MainWindow::setMode(Mode newMode)
 {
@@ -125,9 +138,10 @@ void MainWindow::updateMode(QAction* modeAction)
 
 void MainWindow::showAbout()
 {
-  QString aboutText = QString::fromUtf8("Программа %1 предназначена для измерения длин и площадей объектов на чертежах, картах и пр.\n\n"
+  QString aboutText = QString::fromUtf8("Программа %1, версия %2.\n\n"
+                                        "Приложение предназначено для измерения длин и площадей объектов на чертежах, картах и т.д.\n\n"
                                         "Автор — Матвеякин Андрей.\n\n"
-                                        "Программа распространяется свободно по принципу «как есть»: автор не несёт ответственности за возможный ущерб, нанесённый в результате работы приложения."
-                                        ).arg(appName());
+                                        "Программа распространяется бесплатно по принципу «как есть»: автор не несёт ответственности за возможный ущерб, нанесённый в результате работы приложения."
+                                        ).arg(appName()).arg(appVersionString());
   QMessageBox::about(this, QString::fromUtf8("О программе %1").arg(appName()), aboutText);
 }

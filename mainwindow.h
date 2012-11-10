@@ -17,6 +17,8 @@ public:
   ~MainWindow();
 
   QString appName() const;
+  QList<int> appVersion() const;
+  QString appVersionString() const;
 
   void setMode(Mode newMode);
   void setMeasurementEnabled(bool state);
