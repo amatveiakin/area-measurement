@@ -177,9 +177,9 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
     updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
-    QPoint scrollBy = event->globalPos() - scrollStartPoint_;
-    scrollArea_->horizontalScrollBar()->setValue(scrollStartHValue_ - scrollBy.x());
-    scrollArea_->verticalScrollBar()  ->setValue(scrollStartVValue_ - scrollBy.y());
+    QPoint scrollBy = scrollStartPoint_ - event->globalPos();
+    scrollArea_->horizontalScrollBar()->setValue(scrollStartHValue_ + scrollBy.x());
+    scrollArea_->verticalScrollBar()  ->setValue(scrollStartVValue_ + scrollBy.y());
   }
   event->accept();
 }
