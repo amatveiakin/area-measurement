@@ -44,13 +44,27 @@ MainWindow::MainWindow(QWidget* parent) :
   ui->mainToolBar->setIconSize(QSize(32, 32));
   ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
 
-  QList<QByteArray> supportedFormatsList = QImageReader::supportedImageFormats();
-  QString supportedFormatsString;
-  foreach (const QByteArray& format, supportedFormatsList)
-     supportedFormatsString += "*." + QString(format).toLower() + " ";
+  QList<QByteArray> supportedFormatsList__ = QImageReader::supportedImageFormats();
+  QSet<QString> supportedFormatsSet;
+  foreach (const QByteArray& format, supportedFormatsList__)
+    supportedFormatsSet.insert(QString(format).toLower());
+  QStringList supportedFormatsList(supportedFormatsSet.toList());
+  qSort(supportedFormatsList);
+  QString allFormatsString;
+  QStringList singleFormatsList;
+  foreach (const QString& lowerFormat, supportedFormatsList) {
+    QString upperFormat = lowerFormat.toUpper();
+    allFormatsString += QString("*.%1 ").arg(lowerFormat);
+    if (upperFormat == "JPEG")
+      singleFormatsList += QString::fromUtf8("Изображения JPEG (*.jpeg *.jpg)").arg(upperFormat);
+    else if (upperFormat != "JPG")
+      singleFormatsList += QString::fromUtf8("Изображения %1 (*.%2)").arg(upperFormat).arg(lowerFormat);
+  }
+  allFormatsString = allFormatsString.trimmed();
+  QString formatsList = QString::fromUtf8("Все изображения (%1);;").arg(allFormatsString) + singleFormatsList.join(";;");
 
   QString imageFile = QFileDialog::getOpenFileName (this, QString::fromUtf8("Укажите путь к изображению — ") + appName(),
-                                                    QString(), QString::fromUtf8("Все изображения (%1)").arg(supportedFormatsString));
+                                                    QString(), formatsList, 0);
   if (imageFile.isEmpty()) {
     QTimer::singleShot(0, this, SLOT(close()));
     return;
