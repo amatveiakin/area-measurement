@@ -88,7 +88,6 @@ MainWindow::MainWindow(QWidget* parent) :
   ui->statusBar->addWidget(statusLabel);
 
   canvasWidget = new CanvasWidget(image, this, ui->containingScrollArea, scaleLabel, statusLabel, this);
-  ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
 
   connect(toggleEtalonModeAction, SIGNAL(toggled(bool)),       this,         SLOT(toggleEtalonDefinition(bool)));
