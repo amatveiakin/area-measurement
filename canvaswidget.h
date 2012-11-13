@@ -20,19 +20,18 @@ public:
   ~CanvasWidget();
 
   void setMode(Mode newMode);
+  bool isEtalonCorrect() const;
 
 public slots:
+  void toggleEtalonDefinition(bool etalonMode);
   void toggleRuler(bool showRuler);
 
 private:
   QColor etalonStaticPen_;
   QColor etalonActivePen_;
   QColor staticPen_;
-  QColor staticFill_;
   QColor activePen_;
-  QColor activeFill_;
   QColor errorPen_;
-  QColor errorFill_;
 
   MainWindow* mainWindow_;
   QScrollArea* scrollArea_;
@@ -42,14 +41,14 @@ private:
   QPixmap image_;
 
   Mode mode_;
+  bool etalonDefinition_;
+  bool etalonDefinedRecently_;
   bool showRuler_;
 
   QList<double> acceptableScales_;
   int iScale_;
   double scale_;
 
-  int nEthalonPointsSet_;
-  QLine originalEtalon_;
   double etalonMetersLength_;
   double originalMetersPerPixel_;
   double metersPerPixel_;
@@ -57,6 +56,8 @@ private:
   QPoint originalPointUnderMouse_;
   QPolygon originalPolygon_;
   bool polygonFinished_;
+  QPolygon etalonPolygon_;
+  Mode etalonPolygonMode_;
 
   QPoint scrollStartPoint_;
   int scrollStartHValue_;
@@ -68,13 +69,14 @@ private:
   virtual void mouseMoveEvent(QMouseEvent* event);
   virtual bool eventFilter(QObject* object, QEvent* event);
 
-  QPolygon getActivePolygon(bool scaled) const;
+  void getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon) const;
 
   void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
   void drawRuler(QPainter& painter, const QRect& rect);
 
-  void resetEtalon();
+  void saveEtalonPolygon();
   void resetPolygon();
+  void resetAll();
   void scaleChanged();
 
   void updateStatusText();

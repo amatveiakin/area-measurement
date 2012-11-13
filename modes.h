@@ -3,17 +3,17 @@
 
 enum Mode
 {
-  SET_ETALON,
   MEASURE_SEGMENT_LENGTH,
   MEASURE_POLYLINE_LENGTH,
   MEASURE_CLOSED_POLYLINE_LENGTH,
   MEASURE_RECTANGLE_AREA,
-  MEASURE_POLYGON_AREA
+  MEASURE_POLYGON_AREA,
+
+  DEFAULT_MODE = MEASURE_SEGMENT_LENGTH
 };
 
 enum ModeKind
 {
-  ETALON,
   LENGTH,
   AREA
 };
@@ -21,8 +21,6 @@ enum ModeKind
 static inline ModeKind getModeKind(Mode mode)
 {
   switch (mode) {
-    case SET_ETALON:
-      return ETALON;
     case MEASURE_SEGMENT_LENGTH:
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_CLOSED_POLYLINE_LENGTH:

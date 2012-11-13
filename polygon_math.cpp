@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cmath>
 
 #include <QLineF>
@@ -38,8 +39,7 @@ double polylineLength(const QPolygon& polyline)
 
 void assertPolygonIsClosed(const QPolygon& polygon)
 {
-  if (!polygon.isEmpty() && !fuzzyEq(polygon.first(), polygon.last()))
-    abort();
+  assert(polygon.isEmpty() || fuzzyEq(polygon.first(), polygon.last()));
 }
 
 bool testSegmentsCross(QPoint a, QPoint b, QPoint c, QPoint d)
@@ -86,10 +86,6 @@ double polygonArea(const QPolygon& polygon)
 bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode)
 {
   switch (mode) {
-    case SET_ETALON: {
-      abort();
-    }
-
     case MEASURE_SEGMENT_LENGTH: {
       polygon.append(newPoint);
       return polygon.size() >= 2;
@@ -124,9 +120,6 @@ void finishPolygon(QPolygon& polygon, Mode mode)
     return;
 
   switch (mode) {
-    case SET_ETALON:
-      abort();
-
     case MEASURE_SEGMENT_LENGTH:
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_RECTANGLE_AREA:
@@ -143,9 +136,6 @@ void finishPolygon(QPolygon& polygon, Mode mode)
 bool isValidPolygon(const QPolygon& polygon, Mode mode)
 {
   switch (mode) {
-    case SET_ETALON:
-      abort();
-
     case MEASURE_SEGMENT_LENGTH:
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_CLOSED_POLYLINE_LENGTH:

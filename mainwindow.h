@@ -21,14 +21,16 @@ public:
   QString appVersionString() const;
 
   void setMode(Mode newMode);
-  void setMeasurementEnabled(bool state);
+
+public slots:
+  void toggleEtalonDefinition(bool isDefiningEtalon);
 
 private:
   Ui::MainWindow* ui;
 
   CanvasWidget* canvasWidget;
 
-  QAction* setEtalonAction;
+  QAction* toggleEtalonModeAction;
   QAction* measureSegmentLengthAction;
   QAction* measurePolylineLengthAction;
   QAction* measureClosedPolylineLengthAction;

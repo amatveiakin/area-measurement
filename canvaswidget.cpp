@@ -1,3 +1,8 @@
+// TODO: make cursor the fixed point of the zoom
+
+#include <cassert>
+#include <cmath>
+
 #include <QInputDialog>
 #include <QLabel>
 #include <QPainter>
@@ -26,11 +31,17 @@ const QString squareUnit = linearUnit + QString::fromUtf8("²");
 const int maxImageSize = 4096;
 
 
-static inline QColor getFillColor(QColor penColor)
+static inline QColor getFillColor(const QColor& penColor)
 {
   QColor fillColor = penColor;
   fillColor.setAlpha(100);
   return fillColor;
+}
+
+static inline void setColor(QPainter& painter, const QColor& penColor)
+{
+  painter.setPen(penColor);
+  painter.setBrush(getFillColor(penColor));
 }
 
 
@@ -47,9 +58,6 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   staticPen_  = QColor(  0,  50, 240);
   activePen_  = QColor(  0, 100, 240);
   errorPen_   = QColor(255,   0,   0);
-  staticFill_ = getFillColor(staticPen_);
-  activeFill_ = getFillColor(activePen_);
-  errorFill_  = getFillColor(errorPen_);
 
   acceptableScales_ << 0.01 << 0.015 << 0.02 << 0.025 << 0.03 << 0.04 << 0.05 << 0.06 << 0.07 << 0.08 << 0.09;
   acceptableScales_ << 0.10 << 0.12 << 0.14 << 0.17 << 0.20 << 0.23 << 0.26 << 0.30 << 0.35 << 0.40 << 0.45;
@@ -59,9 +67,10 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
 
   scrollArea_->viewport()->installEventFilter(this);
   setMouseTracking(true);
-  mode_ = SET_ETALON;
+  mode_ = DEFAULT_MODE;
+  etalonDefinition_ = true;
+  etalonDefinedRecently_ = true;
   showRuler_ = false;
-  resetEtalon();
   resetPolygon();
   scaleChanged();
 }
@@ -77,35 +86,31 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
   QPainter painter(this);
   painter.drawPixmap(event->rect().topLeft() , image_, event->rect());
 
-  if (mode_ == SET_ETALON) {
-    if (nEthalonPointsSet_ == 2) {
-      painter.setPen(etalonStaticPen_);
-      painter.drawLine(originalEtalon_.p1() * scale_, originalEtalon_.p2() * scale_);
-    }
-    else if (nEthalonPointsSet_ == 1) {
-      painter.setPen(etalonActivePen_);
-      painter.drawLine(originalEtalon_.p1() * scale_, originalPointUnderMouse_ * scale_);
-    }
+  QPolygon activePolygon;
+  Mode activeMode;
+  bool isEtalon;
+  getActivePolygon(true, activePolygon, activeMode, isEtalon);
+
+  if (!isValidPolygon(activePolygon, activeMode)) {
+    setColor(painter, errorPen_);
+  }
+  else if (isEtalon) {
+    if (polygonFinished_)
+      setColor(painter, etalonStaticPen_);
+    else
+      setColor(painter, etalonActivePen_);
   }
   else {
-    QPolygon activePolygon = getActivePolygon(true);
-    if (!isValidPolygon(activePolygon, mode_)) {
-      painter.setPen(errorPen_);
-      painter.setBrush(errorFill_);
-    }
-    else if (polygonFinished_) {
-      painter.setPen(staticPen_);
-      painter.setBrush(staticFill_);
-    }
-    else {
-      painter.setPen(activePen_);
-      painter.setBrush(activeFill_);
-    }
-    if (getModeKind(mode_) == LENGTH)
-      painter.drawPolyline(activePolygon);
+    if (polygonFinished_)
+      setColor(painter, staticPen_);
     else
-      painter.drawPolygon(activePolygon);
+      setColor(painter, activePen_);
   }
+
+  if (getModeKind(activeMode) == LENGTH)
+    painter.drawPolyline(activePolygon);
+  else
+    painter.drawPolygon(activePolygon);
 
   if (showRuler_)
     drawRuler(painter, event->rect());
@@ -116,37 +121,45 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
   if (event->buttons() == Qt::LeftButton) {
     QPoint originalNewPoint = event->pos() / scale_;
 
+    if (!etalonDefinition_)
+      etalonDefinedRecently_ = false;
+
     if (polygonFinished_)
       resetPolygon();
 
-    if (mode_ == SET_ETALON) {
-      if (nEthalonPointsSet_ >= 2)
-        resetEtalon();
+    polygonFinished_ = addPoint(originalPolygon_, originalNewPoint, mode_);
+    if (polygonFinished_)
+      finishPolygon(originalPolygon_, mode_);
 
-      if (nEthalonPointsSet_ == 0) {
-        originalEtalon_.setP1(originalNewPoint);
-        nEthalonPointsSet_ = 1;
+    if (polygonFinished_ && etalonDefinition_) {
+      double originalEtalonPixelLength = 0.;
+      QString prompt;
+      switch (getModeKind(mode_)) {
+        case LENGTH:
+          originalEtalonPixelLength = polylineLength(originalPolygon_);
+          prompt = QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit);
+          break;
+        case AREA:
+          originalEtalonPixelLength = std::sqrt(polygonArea(originalPolygon_));
+          prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnit);
+          break;
       }
-      else if (nEthalonPointsSet_ == 1) {
-        bool ok;
-        originalEtalon_.setP2(originalNewPoint);
-        etalonMetersLength_ = QInputDialog::getDouble(this, mainWindow_->appName(), QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit), 1., 0.001, 1e9, 3, &ok);
-        double originalEtalonPixelLength_ = segmentLenght(originalEtalon_.p1(), originalEtalon_.p2());
-        if (ok && originalEtalonPixelLength_ > eps) {
-          originalMetersPerPixel_ = etalonMetersLength_ / originalEtalonPixelLength_;
-          metersPerPixel_ = originalMetersPerPixel_ / scale_;
-          nEthalonPointsSet_ = 2;
-          mainWindow_->setMeasurementEnabled(true);
+      bool ok;
+      double etalonMetersSize = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
+      if (ok && originalEtalonPixelLength > eps) {
+        switch (getModeKind(mode_)) {
+          case LENGTH: etalonMetersLength_ = etalonMetersSize;            break;
+          case AREA:   etalonMetersLength_ = std::sqrt(etalonMetersSize); break;
         }
-        else
-          resetEtalon();
+        originalMetersPerPixel_ = etalonMetersLength_ / originalEtalonPixelLength;
+        metersPerPixel_ = originalMetersPerPixel_ / scale_;
+        saveEtalonPolygon();
+        mainWindow_->toggleEtalonDefinition(false);
       }
+      else
+        resetPolygon();
     }
-    else {
-      polygonFinished_ = addPoint(originalPolygon_, originalNewPoint, mode_);
-      if (polygonFinished_)
-        finishPolygon(originalPolygon_, mode_);
-    }
+
     updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
@@ -192,29 +205,50 @@ bool CanvasWidget::eventFilter(QObject* object, QEvent* event__)
 void CanvasWidget::setMode(Mode newMode)
 {
   mode_ = newMode;
-  originalPolygon_.clear();
-  updateAll();
+  resetAll();
+}
+
+bool CanvasWidget::isEtalonCorrect() const
+{
+  return etalonMetersLength_ > 0.;
 }
 
 
+void CanvasWidget::toggleEtalonDefinition(bool isDefiningEtalon)
+{
+  if (etalonDefinition_ == isDefiningEtalon)
+    return;
+  etalonDefinition_ = isDefiningEtalon;
+  if (etalonDefinition_)
+    etalonDefinedRecently_ = true;
+  resetAll();
+}
+
 void CanvasWidget::toggleRuler(bool showRuler)
 {
+  if (showRuler_ == showRuler)
+    return;
   showRuler_ = showRuler;
   update();
 }
 
 
-QPolygon CanvasWidget::getActivePolygon(bool scaled) const
+void CanvasWidget::getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon) const
 {
-  QPolygon activePolygon = originalPolygon_;
+  polygon = originalPolygon_;
+  mode = mode_;
   if (!polygonFinished_) {
-    addPoint(activePolygon, originalPointUnderMouse_, mode_);
-    finishPolygon(activePolygon, mode_);
+    addPoint(polygon, originalPointUnderMouse_, mode);
+    finishPolygon(polygon, mode);
+  }
+  isEtalon = etalonDefinedRecently_;
+  if (polygon.isEmpty() && isEtalon) {
+    polygon = etalonPolygon_;
+    mode = etalonPolygonMode_;
   }
   if (scaled)
-    for (QPolygon::Iterator it = activePolygon.begin(); it != activePolygon.end(); ++it)
+    for (QPolygon::Iterator it = polygon.begin(); it != polygon.end(); ++it)
       *it *= scale_;
-  return activePolygon;
 }
 
 
@@ -229,7 +263,7 @@ void CanvasWidget::drawFramed(QPainter& painter, const QList<QRect>& objects, in
 void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 {
   int maxLength = qMin(rulerMaxLength, rect.width() - 2 * rulerMargin);
-  if (nEthalonPointsSet_ != 2 || maxLength < rulerMinLength)
+  if (!isEtalonCorrect() || maxLength < rulerMinLength)
     return;
 
   double pixelLengthF;
@@ -263,20 +297,30 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 }
 
 
-void CanvasWidget::resetEtalon()
+void CanvasWidget::saveEtalonPolygon()
 {
-  nEthalonPointsSet_ = 0;
-  originalEtalon_ = QLine();
-  etalonMetersLength_ = 0.;
-  originalMetersPerPixel_ = 0.;
-  metersPerPixel_ = 0.;
-  mainWindow_->setMeasurementEnabled(false);
+  assert(polygonFinished_);
+  etalonPolygon_ = originalPolygon_;
+  etalonPolygonMode_ = mode_;
 }
 
 void CanvasWidget::resetPolygon()
 {
   originalPolygon_.clear();
   polygonFinished_ = false;
+  if (etalonDefinition_) {
+    etalonPolygon_.clear();
+    etalonPolygonMode_ = DEFAULT_MODE;
+    etalonMetersLength_ = 0.;
+    originalMetersPerPixel_ = 0.;
+    metersPerPixel_ = 0.;
+  }
+}
+
+void CanvasWidget::resetAll()
+{
+  originalPolygon_.clear();
+  updateAll();
 }
 
 void CanvasWidget::scaleChanged()
@@ -292,21 +336,24 @@ void CanvasWidget::scaleChanged()
 
 void CanvasWidget::updateStatusText()
 {
-  switch (getModeKind(mode_)) {
-    case ETALON: {
-      statusLabel_->setText(etalonMetersLength_ > eps ? QString::fromUtf8("Длина эталона: %1 %2").arg(etalonMetersLength_).arg(linearUnit) : QString());
-      break;
-    }
+  statusLabel_->clear();
+  QPolygon activePolygon;
+  Mode activeMode;
+  bool isEtalon;
+  getActivePolygon(false, activePolygon, activeMode, isEtalon);
+  QString etalonString = isEtalon ? QString::fromUtf8(" эталона") : QString();
+  switch (getModeKind(activeMode)) {
     case LENGTH: {
-      double length = polylineLength(getActivePolygon(false)) * originalMetersPerPixel_;
-      statusLabel_->setText(length > eps ? QString::fromUtf8("Длина: %1 %2").arg(length).arg(linearUnit) : QString());
+      double length = polylineLength(activePolygon) * originalMetersPerPixel_;
+      if (length > eps)
+        statusLabel_->setText(QString::fromUtf8("Длина%1: %2 %3").arg(etalonString).arg(length).arg(linearUnit));
       break;
     }
     case AREA: {
-      QPolygon activePolygon = getActivePolygon(false);
-      if (isValidPolygon(activePolygon, mode_)) {
+      if (isValidPolygon(activePolygon, activeMode)) {
         double area = polygonArea(activePolygon) * sqr(originalMetersPerPixel_);
-        statusLabel_->setText(area > eps ? QString::fromUtf8("Площадь: %1 %2").arg(area).arg(squareUnit) : QString());
+        if (area > eps)
+          statusLabel_->setText(QString::fromUtf8("Площадь%1: %2 %3").arg(etalonString).arg(area).arg(squareUnit));
       }
       else {
         statusLabel_->setText(QString::fromUtf8("Многоугольник не должен самопересекаться!"));

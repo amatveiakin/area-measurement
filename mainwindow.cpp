@@ -19,19 +19,23 @@ MainWindow::MainWindow(QWidget* parent) :
   setWindowTitle(appName());
 
   QActionGroup* modeActionGroup = new QActionGroup(this);
-  setEtalonAction                   = new QAction(QIcon(":/pictures/etalon.png"),                 QString::fromUtf8("Задание эталона"),                    modeActionGroup);
-  measureSegmentLengthAction        = new QAction(QIcon(":/pictures/segment_length.png"),         QString::fromUtf8("Измерение длин отрезков"),            modeActionGroup);
-  measurePolylineLengthAction       = new QAction(QIcon(":/pictures/polyline_length.png"),        QString::fromUtf8("Измерение длин кривых"),              modeActionGroup);
-  measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.png"), QString::fromUtf8("Измерение длин замкнутых кривых"),    modeActionGroup);
-  measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"), modeActionGroup);
-  measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"), modeActionGroup);
-  toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"), this);
-  aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                  QString::fromUtf8("О программе"),                        this);
+  toggleEtalonModeAction            = new QAction(QIcon(":/pictures/etalon.png"),                 QString::fromUtf8("Включить/выключить режим задания эталона"),  this);
+  measureSegmentLengthAction        = new QAction(QIcon(":/pictures/segment_length.png"),         QString::fromUtf8("Измерение длин отрезков"),                   modeActionGroup);
+  measurePolylineLengthAction       = new QAction(QIcon(":/pictures/polyline_length.png"),        QString::fromUtf8("Измерение длин кривых"),                     modeActionGroup);
+  measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.png"), QString::fromUtf8("Измерение длин замкнутых кривых"),           modeActionGroup);
+  measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"),        modeActionGroup);
+  measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"),        modeActionGroup);
+  toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"),        this);
+  aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                  QString::fromUtf8("О программе"),                               this);
+  toggleEtalonModeAction->setCheckable(true);
+  toggleEtalonModeAction->setChecked(true);
   foreach (QAction* action, modeActionGroup->actions())
     action->setCheckable(true);
-  setEtalonAction->setChecked(true);
+  measureSegmentLengthAction->setChecked(true);
   toggleRulerAction->setCheckable(true);
   toggleRulerAction->setChecked(true);
+  ui->mainToolBar->addAction(toggleEtalonModeAction);
+  ui->mainToolBar->addSeparator();
   ui->mainToolBar->addActions(modeActionGroup->actions());
   ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(toggleRulerAction);
@@ -39,7 +43,6 @@ MainWindow::MainWindow(QWidget* parent) :
   ui->mainToolBar->addAction(aboutAction);
   ui->mainToolBar->setIconSize(QSize(32, 32));
   ui->mainToolBar->setContextMenuPolicy(Qt::PreventContextMenu);
-  setMeasurementEnabled(false);
 
   QList<QByteArray> supportedFormatsList = QImageReader::supportedImageFormats();
   QString supportedFormatsString;
@@ -74,9 +77,10 @@ MainWindow::MainWindow(QWidget* parent) :
   ui->containingScrollArea->setBackgroundRole(QPalette::Dark);
   ui->containingScrollArea->setWidget(canvasWidget);
 
-  connect(modeActionGroup,    SIGNAL(triggered(QAction*)), this,         SLOT(updateMode(QAction*)));
-  connect(toggleRulerAction,  SIGNAL(toggled(bool)),       canvasWidget, SLOT(toggleRuler(bool)));
-  connect(aboutAction,        SIGNAL(triggered()),         this,         SLOT(showAbout()));
+  connect(toggleEtalonModeAction, SIGNAL(toggled(bool)),       this,         SLOT(toggleEtalonDefinition(bool)));
+  connect(modeActionGroup,        SIGNAL(triggered(QAction*)), this,         SLOT(updateMode(QAction*)));
+  connect(toggleRulerAction,      SIGNAL(toggled(bool)),       canvasWidget, SLOT(toggleRuler(bool)));
+  connect(aboutAction,            SIGNAL(triggered()),         this,         SLOT(showAbout()));
   canvasWidget->toggleRuler(toggleRulerAction->isChecked());
 }
 
@@ -93,6 +97,7 @@ QString MainWindow::appName() const
 
 QList<int> MainWindow::appVersion() const
 {
+  // TODO: Don't forget to increment it!
   return QList<int>() << 0 << 3;
 }
 
@@ -110,19 +115,8 @@ void MainWindow::setMode(Mode newMode)
   canvasWidget->setMode(newMode);
 }
 
-void MainWindow::setMeasurementEnabled(bool state)
-{
-  measureSegmentLengthAction       ->setEnabled(state);
-  measurePolylineLengthAction      ->setEnabled(state);
-  measureClosedPolylineLengthAction->setEnabled(state);
-  measureRectangleAreaAction       ->setEnabled(state);
-  measurePolygonAreaAction         ->setEnabled(state);
-}
-
 void MainWindow::updateMode(QAction* modeAction)
 {
-  if (modeAction == setEtalonAction)
-    return setMode(SET_ETALON);
   if (modeAction == measureSegmentLengthAction)
     return setMode(MEASURE_SEGMENT_LENGTH);
   if (modeAction == measurePolylineLengthAction)
@@ -134,6 +128,16 @@ void MainWindow::updateMode(QAction* modeAction)
   if (modeAction == measurePolygonAreaAction)
     return setMode(MEASURE_POLYGON_AREA);
   abort();
+}
+
+void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
+{
+  if (canvasWidget->isEtalonCorrect()) {
+    toggleEtalonModeAction->setChecked(isDefiningEtalon);
+    canvasWidget->toggleEtalonDefinition(isDefiningEtalon);
+  }
+  else
+    toggleEtalonModeAction->setChecked(true);
 }
 
 void MainWindow::showAbout()
