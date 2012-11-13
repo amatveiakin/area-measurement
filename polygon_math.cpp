@@ -11,11 +11,6 @@
 
 const double eps = 1e-6;
 
-static inline bool fuzzyEq(QPoint a, QPoint b)
-{
-  return (a - b).manhattanLength() <= eps;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Length
@@ -39,7 +34,7 @@ double polylineLength(const QPolygon& polyline)
 
 void assertPolygonIsClosed(const QPolygon& polygon)
 {
-  assert(polygon.isEmpty() || fuzzyEq(polygon.first(), polygon.last()));
+  assert(polygon.isEmpty() || polygon.first() == polygon.last());
 }
 
 bool testSegmentsCross(QPoint a, QPoint b, QPoint c, QPoint d)
