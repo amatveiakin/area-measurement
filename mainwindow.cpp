@@ -111,7 +111,7 @@ QString MainWindow::appName() const
 QList<int> MainWindow::appVersion() const
 {
   // TODO: Don't forget to increment it!
-  return QList<int>() << 0 << 4;
+  return QList<int>() << 0 << 5;
 }
 
 QString MainWindow::appVersionString() const
