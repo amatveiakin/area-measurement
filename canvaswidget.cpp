@@ -1,5 +1,4 @@
 // TODO: make cursor the fixed point of the zoom
-// TODO: change double click detection mechanism
 // TODO: compute area for selfintersecting polygons
 // TODO: polygon editing: move points, move segments, add points, delete points
 // TODO: set scale by two points GPS coordinates
@@ -133,40 +132,11 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
     if (polygonFinished_)
       resetPolygon();
 
-    polygonFinished_ = addPoint(originalPolygon_, originalNewPoint, mode_);
-    if (polygonFinished_)
-      finishPolygon(originalPolygon_, mode_);
-
-    if (polygonFinished_ && etalonDefinition_) {
-      double originalEtalonPixelLength = 0.;
-      QString prompt;
-      switch (getModeKind(mode_)) {
-        case LENGTH:
-          originalEtalonPixelLength = polylineLength(originalPolygon_);
-          prompt = QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit);
-          break;
-        case AREA:
-          originalEtalonPixelLength = std::sqrt(polygonArea(originalPolygon_));
-          prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnit);
-          break;
-      }
-      bool ok;
-      double etalonMetersSize = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
-      if (ok && originalEtalonPixelLength > eps) {
-        switch (getModeKind(mode_)) {
-          case LENGTH: etalonMetersLength_ = etalonMetersSize;            break;
-          case AREA:   etalonMetersLength_ = std::sqrt(etalonMetersSize); break;
-        }
-        originalMetersPerPixel_ = etalonMetersLength_ / originalEtalonPixelLength;
-        metersPerPixel_ = originalMetersPerPixel_ / scale_;
-        saveEtalonPolygon();
-        mainWindow_->toggleEtalonDefinition(false);
-      }
-      else
-        resetPolygon();
-    }
-
-    updateAll();
+    bool polygonFinished = addPoint(originalPolygon_, originalNewPoint, mode_);
+    if (polygonFinished)
+      finishPlotting();
+    else
+      updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
     scrollStartPoint_ = event->globalPos();
@@ -187,6 +157,12 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
     scrollArea_->horizontalScrollBar()->setValue(scrollStartHValue_ + scrollBy.x());
     scrollArea_->verticalScrollBar()  ->setValue(scrollStartVValue_ + scrollBy.y());
   }
+  event->accept();
+}
+
+void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+  finishPlotting();
   event->accept();
 }
 
@@ -303,6 +279,47 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
   painter.drawText(labelPos, rulerLabel);
 }
 
+
+void CanvasWidget::finishPlotting()
+{
+  finishPolygon(originalPolygon_, mode_);
+  polygonFinished_ = true;
+
+  qDebug(" ");
+  foreach (QPoint v, originalPolygon_)
+    qDebug("%d, %d", v.x(), v.y());
+
+  if (etalonDefinition_) {
+    double originalEtalonPixelLength = 0.;
+    QString prompt;
+    switch (getModeKind(mode_)) {
+      case LENGTH:
+        originalEtalonPixelLength = polylineLength(originalPolygon_);
+        prompt = QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnit);
+        break;
+      case AREA:
+        originalEtalonPixelLength = std::sqrt(polygonArea(originalPolygon_));
+        prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnit);
+        break;
+    }
+    bool ok;
+    double etalonMetersSize = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
+    if (ok && originalEtalonPixelLength > eps) {
+      switch (getModeKind(mode_)) {
+        case LENGTH: etalonMetersLength_ = etalonMetersSize;            break;
+        case AREA:   etalonMetersLength_ = std::sqrt(etalonMetersSize); break;
+      }
+      originalMetersPerPixel_ = etalonMetersLength_ / originalEtalonPixelLength;
+      metersPerPixel_ = originalMetersPerPixel_ / scale_;
+      saveEtalonPolygon();
+      mainWindow_->toggleEtalonDefinition(false);
+    }
+    else
+      resetPolygon();
+  }
+
+  updateAll();
+}
 
 void CanvasWidget::saveEtalonPolygon()
 {

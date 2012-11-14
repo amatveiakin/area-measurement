@@ -67,6 +67,7 @@ private:
   virtual void paintEvent(QPaintEvent* event);
   virtual void mousePressEvent(QMouseEvent* event);
   virtual void mouseMoveEvent(QMouseEvent* event);
+  virtual void mouseDoubleClickEvent(QMouseEvent* event);
   virtual bool eventFilter(QObject* object, QEvent* event);
 
   void getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon, PolygonCorrectness& correctness) const;
@@ -74,6 +75,7 @@ private:
   void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
   void drawRuler(QPainter& painter, const QRect& rect);
 
+  void finishPlotting();
   void saveEtalonPolygon();
   void resetPolygon();
   void resetAll();
