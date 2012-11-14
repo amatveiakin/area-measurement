@@ -3,7 +3,7 @@
 
 #include <QPolygon>
 
-#include "modes.h"
+#include "defines.h"
 
 extern const double eps;
 
@@ -17,7 +17,7 @@ double polygonArea(const QPolygon& polygon);
 
 bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode);
 void finishPolygon(QPolygon& polygon, Mode mode);
-bool isValidPolygon(const QPolygon& polygon, Mode mode);
+PolygonCorrectness polygonCorrectness(const QPolygon& polygon, Mode mode);
 
 
 #endif // POLYGON_MATH_H

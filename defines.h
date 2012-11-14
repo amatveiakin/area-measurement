@@ -1,5 +1,5 @@
-#ifndef MODES_H
-#define MODES_H
+#ifndef DEFINES_H
+#define DEFINES_H
 
 enum Mode
 {
@@ -32,4 +32,10 @@ static inline ModeKind getModeKind(Mode mode)
   abort();
 }
 
-#endif // MODES_H
+
+enum PolygonCorrectness {
+  VALID_POLYGON,
+  SELF_INTERSECTING_POLYGON
+};
+
+#endif // DEFINES_H

@@ -89,9 +89,10 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
   QPolygon activePolygon;
   Mode activeMode;
   bool isEtalon;
-  getActivePolygon(true, activePolygon, activeMode, isEtalon);
+  PolygonCorrectness correctness;
+  getActivePolygon(true, activePolygon, activeMode, isEtalon, correctness);
 
-  if (!isValidPolygon(activePolygon, activeMode)) {
+  if (correctness != VALID_POLYGON) {
     setColor(painter, errorPen_);
   }
   else if (isEtalon) {
@@ -233,7 +234,7 @@ void CanvasWidget::toggleRuler(bool showRuler)
 }
 
 
-void CanvasWidget::getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon) const
+void CanvasWidget::getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon, PolygonCorrectness& correctness) const
 {
   polygon = originalPolygon_;
   mode = mode_;
@@ -246,6 +247,7 @@ void CanvasWidget::getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, 
     polygon = etalonPolygon_;
     mode = etalonPolygonMode_;
   }
+  correctness = polygonCorrectness(polygon, mode);
   if (scaled)
     for (QPolygon::Iterator it = polygon.begin(); it != polygon.end(); ++it)
       *it *= scale_;
@@ -340,24 +342,30 @@ void CanvasWidget::updateStatusText()
   QPolygon activePolygon;
   Mode activeMode;
   bool isEtalon;
-  getActivePolygon(false, activePolygon, activeMode, isEtalon);
-  QString etalonString = isEtalon ? QString::fromUtf8(" эталона") : QString();
-  switch (getModeKind(activeMode)) {
-    case LENGTH: {
-      double length = polylineLength(activePolygon) * originalMetersPerPixel_;
-      if (length > eps)
-        statusLabel_->setText(QString::fromUtf8("Длина%1: %2 %3").arg(etalonString).arg(length).arg(linearUnit));
+  PolygonCorrectness correctness;
+  getActivePolygon(false, activePolygon, activeMode, isEtalon, correctness);
+
+  switch (correctness) {
+    case VALID_POLYGON: {
+      QString etalonString = isEtalon ? QString::fromUtf8(" эталона") : QString();
+      switch (getModeKind(activeMode)) {
+        case LENGTH: {
+          double length = polylineLength(activePolygon) * originalMetersPerPixel_;
+          if (length > eps)
+            statusLabel_->setText(QString::fromUtf8("Длина%1: %2 %3").arg(etalonString).arg(length).arg(linearUnit));
+          break;
+        }
+        case AREA: {
+          double area = polygonArea(activePolygon) * sqr(originalMetersPerPixel_);
+          if (area > eps)
+            statusLabel_->setText(QString::fromUtf8("Площадь%1: %2 %3").arg(etalonString).arg(area).arg(squareUnit));
+          break;
+        }
+      }
       break;
     }
-    case AREA: {
-      if (isValidPolygon(activePolygon, activeMode)) {
-        double area = polygonArea(activePolygon) * sqr(originalMetersPerPixel_);
-        if (area > eps)
-          statusLabel_->setText(QString::fromUtf8("Площадь%1: %2 %3").arg(etalonString).arg(area).arg(squareUnit));
-      }
-      else {
-        statusLabel_->setText(QString::fromUtf8("Многоугольник не должен самопересекаться!"));
-      }
+    case SELF_INTERSECTING_POLYGON: {
+      statusLabel_->setText(QString::fromUtf8("Многоугольник не должен самопересекаться!"));
       break;
     }
   }

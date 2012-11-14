@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-#include "modes.h"
+#include "defines.h"
 
 namespace Ui { class MainWindow; }
 class CanvasWidget;

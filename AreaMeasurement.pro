@@ -18,7 +18,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     polygon_math.h \
     canvaswidget.h \
-    modes.h
+    defines.h
 
 FORMS    += mainwindow.ui
 

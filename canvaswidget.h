@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "modes.h"
+#include "defines.h"
 
 class MainWindow;
 class QLabel;
@@ -69,7 +69,7 @@ private:
   virtual void mouseMoveEvent(QMouseEvent* event);
   virtual bool eventFilter(QObject* object, QEvent* event);
 
-  void getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon) const;
+  void getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon, PolygonCorrectness& correctness) const;
 
   void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
   void drawRuler(QPainter& painter, const QRect& rect);

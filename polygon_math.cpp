@@ -128,17 +128,17 @@ void finishPolygon(QPolygon& polygon, Mode mode)
   abort();
 }
 
-bool isValidPolygon(const QPolygon& polygon, Mode mode)
+PolygonCorrectness polygonCorrectness(const QPolygon& polygon, Mode mode)
 {
   switch (mode) {
     case MEASURE_SEGMENT_LENGTH:
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_CLOSED_POLYLINE_LENGTH:
     case MEASURE_RECTANGLE_AREA:
-      return true;
+      return VALID_POLYGON;
 
     case MEASURE_POLYGON_AREA:
-      return !isSelfintersectingPolygon(polygon);
+      return isSelfintersectingPolygon(polygon) ? SELF_INTERSECTING_POLYGON : VALID_POLYGON;
   }
   abort();
 }
