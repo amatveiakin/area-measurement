@@ -1,4 +1,9 @@
 // TODO: make cursor the fixed point of the zoom
+// TODO: change double click detection mechanism
+// TODO: compute area for selfintersecting polygons
+// TODO: polygon editing: move points, move segments, add points, delete points
+// TODO: set scale by two points GPS coordinates
+// TODO: use floating-point numbers to store polygon in original coodinates, for exactness (?)
 
 #include <cassert>
 #include <cmath>
