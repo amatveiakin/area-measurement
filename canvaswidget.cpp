@@ -3,6 +3,7 @@
 // TODO: polygon editing: move points, move segments, add points, delete points
 // TODO: set scale by two points GPS coordinates
 // TODO: use floating-point numbers to store polygon in original coodinates, for exactness (?)
+// TODO: save areas measured, allow to set their colors; save & print the result
 
 #include <cassert>
 #include <cmath>

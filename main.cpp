@@ -1,3 +1,5 @@
+// TODO: Use Q_ASSERT instead of assert (?)
+
 #include <QtGui/QApplication>
 #include "mainwindow.h"
 
