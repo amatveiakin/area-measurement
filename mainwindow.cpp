@@ -56,7 +56,7 @@ MainWindow::MainWindow(QWidget* parent) :
     QString upperFormat = lowerFormat.toUpper();
     allFormatsString += QString("*.%1 ").arg(lowerFormat);
     if (upperFormat == "JPEG")
-      singleFormatsList += QString::fromUtf8("Изображения JPEG (*.jpeg *.jpg)").arg(upperFormat);
+      singleFormatsList += QString::fromUtf8("Изображения JPEG (*.jpeg *.jpg)");
     else if (upperFormat != "JPG")
       singleFormatsList += QString::fromUtf8("Изображения %1 (*.%2)").arg(upperFormat).arg(lowerFormat);
   }
