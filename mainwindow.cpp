@@ -173,7 +173,7 @@ void MainWindow::saveSettings() const
   QSettings settings(companyName(), appName ());
   settings.clear();
   settings.beginWriteArray("Recent Documents");
-  for (int i = 0; i < recentFiles.size (); ++i) {
+  for (int i = 0; i < recentFiles.size(); ++i) {
     settings.setArrayIndex(i);
     settings.setValue("Filename", recentFiles[i]);
   }
@@ -185,6 +185,11 @@ void MainWindow::updateOpenRecentMenu()
   openRecentMenu->clear();
   foreach (const QString& file, recentFiles)
     openRecentMenu->addAction(file, this, SLOT(openRecentFile()));
+  if (openRecentMenu->isEmpty()) {
+    QAction* infoAction = new QAction(QString::fromUtf8("Список недавно открытых документов пуст"), openRecentMenu);
+    infoAction->setEnabled(false);
+    openRecentMenu->addAction(infoAction);
+  }
 }
 
 
