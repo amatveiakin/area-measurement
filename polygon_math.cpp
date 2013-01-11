@@ -89,13 +89,15 @@ bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode)
     case MEASURE_POLYLINE_LENGTH:
     case MEASURE_CLOSED_POLYLINE_LENGTH:
     case MEASURE_POLYGON_AREA: {
-      polygon.append(newPoint);
+      if (polygon.isEmpty() || newPoint != polygon.back())
+        polygon.append(newPoint);
       return false;
     }
 
     case MEASURE_RECTANGLE_AREA: {
       if (polygon.empty()) {
-        polygon.append(newPoint);
+        if (polygon.isEmpty() || newPoint != polygon.back())
+          polygon.append(newPoint);
         return false;
       }
       else {
