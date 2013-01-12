@@ -49,7 +49,6 @@ private:
   int iScale_;
   double scale_;
 
-  double etalonMetersLength_;
   double originalMetersPerPixel_;
   double metersPerPixel_;
 

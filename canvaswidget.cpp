@@ -193,7 +193,7 @@ void CanvasWidget::setMode(Mode newMode)
 
 bool CanvasWidget::isEtalonCorrect() const
 {
-  return etalonMetersLength_ > 0.;
+  return originalMetersPerPixel_ > 0.;
 }
 
 
@@ -306,11 +306,12 @@ void CanvasWidget::finishPlotting()
     bool ok;
     double etalonMetersSize = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
     if (ok && originalEtalonPixelLength > eps) {
+      double etalonMetersLength;
       switch (getModeKind(mode_)) {
-        case LENGTH: etalonMetersLength_ = etalonMetersSize;            break;
-        case AREA:   etalonMetersLength_ = std::sqrt(etalonMetersSize); break;
+        case LENGTH: etalonMetersLength = etalonMetersSize;            break;
+        case AREA:   etalonMetersLength = std::sqrt(etalonMetersSize); break;
       }
-      originalMetersPerPixel_ = etalonMetersLength_ / originalEtalonPixelLength;
+      originalMetersPerPixel_ = etalonMetersLength / originalEtalonPixelLength;
       metersPerPixel_ = originalMetersPerPixel_ / scale_;
       saveEtalonPolygon();
       mainWindow_->toggleEtalonDefinition(false);
@@ -336,7 +337,6 @@ void CanvasWidget::resetPolygon()
   if (etalonDefinition_) {
     etalonPolygon_.clear();
     etalonPolygonMode_ = DEFAULT_MODE;
-    etalonMetersLength_ = 0.;
     originalMetersPerPixel_ = 0.;
     metersPerPixel_ = 0.;
   }
