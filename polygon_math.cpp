@@ -78,24 +78,24 @@ double polygonArea(const QPolygon& polygon)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Polygon
 
-bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode)
+bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType)
 {
-  switch (mode) {
-    case MEASURE_SEGMENT_LENGTH: {
+  switch (figureType) {
+    case SEGMENT: {
       polygon.append(newPoint);
       return polygon.size() >= 2;
     }
 
-    case MEASURE_POLYLINE_LENGTH:
-    case MEASURE_CLOSED_POLYLINE_LENGTH:
-    case MEASURE_POLYGON_AREA: {
+    case POLYLINE:
+    case CLOSED_POLYLINE:
+    case POLYGON: {
       if (polygon.isEmpty() || newPoint != polygon.back())
         polygon.append(newPoint);
       return false;
     }
 
-    case MEASURE_RECTANGLE_AREA: {
-      if (polygon.empty()) {
+    case RECTANGLE: {
+      if (polygon.isEmpty()) {
         if (polygon.isEmpty() || newPoint != polygon.back())
           polygon.append(newPoint);
         return false;
@@ -109,35 +109,35 @@ bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode)
   abort();
 }
 
-void finishPolygon(QPolygon& polygon, Mode mode)
+void finishPolygon(QPolygon& polygon, FigureType figureType)
 {
   if (polygon.isEmpty())
     return;
 
-  switch (mode) {
-    case MEASURE_SEGMENT_LENGTH:
-    case MEASURE_POLYLINE_LENGTH:
-    case MEASURE_RECTANGLE_AREA:
+  switch (figureType) {
+    case SEGMENT:
+    case POLYLINE:
+    case RECTANGLE:
       return;
 
-    case MEASURE_CLOSED_POLYLINE_LENGTH:
-    case MEASURE_POLYGON_AREA:
+    case CLOSED_POLYLINE:
+    case POLYGON:
       polygon.append(polygon.first());
       return;
   }
   abort();
 }
 
-PolygonCorrectness polygonCorrectness(const QPolygon& polygon, Mode mode)
+PolygonCorrectness polygonCorrectness(const QPolygon& polygon, FigureType figureType)
 {
-  switch (mode) {
-    case MEASURE_SEGMENT_LENGTH:
-    case MEASURE_POLYLINE_LENGTH:
-    case MEASURE_CLOSED_POLYLINE_LENGTH:
-    case MEASURE_RECTANGLE_AREA:
+  switch (figureType) {
+    case SEGMENT:
+    case POLYLINE:
+    case CLOSED_POLYLINE:
+    case RECTANGLE:
       return VALID_POLYGON;
 
-    case MEASURE_POLYGON_AREA:
+    case POLYGON:
       return isSelfintersectingPolygon(polygon) ? SELF_INTERSECTING_POLYGON : VALID_POLYGON;
   }
   abort();

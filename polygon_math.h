@@ -15,9 +15,9 @@ double polylineLength(const QPolygon& polyline);
 bool isSelfintersectingPolygon(const QPolygon& polygon);
 double polygonArea(const QPolygon& polygon);
 
-bool addPoint(QPolygon& polygon, QPoint newPoint, Mode mode);
-void finishPolygon(QPolygon& polygon, Mode mode);
-PolygonCorrectness polygonCorrectness(const QPolygon& polygon, Mode mode);
+bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType);
+void finishPolygon(QPolygon& polygon, FigureType figureType);
+PolygonCorrectness polygonCorrectness(const QPolygon& polygon, FigureType figureType);
 
 
 #endif // POLYGON_MATH_H

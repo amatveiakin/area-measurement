@@ -13,12 +13,16 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     polygon_math.cpp \
-    canvaswidget.cpp
+    canvaswidget.cpp \
+    figure.cpp \
+    paint_utils.cpp
 
 HEADERS  += mainwindow.h \
     polygon_math.h \
     canvaswidget.h \
-    defines.h
+    defines.h \
+    figure.h \
+    paint_utils.h
 
 FORMS    += mainwindow.ui
 

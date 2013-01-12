@@ -123,7 +123,7 @@ QFont MainWindow::getInscriptionFont() const
   return inscriptionFont;
 }
 
-void MainWindow::setMode(Mode newMode)
+void MainWindow::setMode(FigureType newMode)
 {
   if (canvasWidget)
     canvasWidget->setMode(newMode);
@@ -248,15 +248,15 @@ void MainWindow::setDrawOptionsEnabled(bool enabled)
 void MainWindow::updateMode(QAction* modeAction)
 {
   if (modeAction == measureSegmentLengthAction)
-    return setMode(MEASURE_SEGMENT_LENGTH);
+    return setMode(SEGMENT);
   if (modeAction == measurePolylineLengthAction)
-    return setMode(MEASURE_POLYLINE_LENGTH);
+    return setMode(POLYLINE);
   if (modeAction == measureClosedPolylineLengthAction)
-    return setMode(MEASURE_CLOSED_POLYLINE_LENGTH);
+    return setMode(CLOSED_POLYLINE);
   if (modeAction == measureRectangleAreaAction)
-    return setMode(MEASURE_RECTANGLE_AREA);
+    return setMode(RECTANGLE);
   if (modeAction == measurePolygonAreaAction)
-    return setMode(MEASURE_POLYGON_AREA);
+    return setMode(POLYGON);
   abort();
 }
 
@@ -275,6 +275,7 @@ void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
 
 void MainWindow::customizeInscriptionFont()
 {
+  // TODO: Why does the dialog show wrong font for the first time?
   inscriptionFont = QFontDialog::getFont(0, inscriptionFont, this);
   if (canvasWidget)
     canvasWidget->update();

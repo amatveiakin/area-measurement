@@ -24,7 +24,7 @@ public:
   QString appVersionString() const;
 
   QFont getInscriptionFont() const;
-  void setMode(Mode newMode);
+  void setMode(FigureType newMode);
 
 public slots:
   void toggleEtalonDefinition(bool isDefiningEtalon);

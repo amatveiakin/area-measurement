@@ -1,33 +1,32 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-enum Mode
+enum FigureType
 {
-  MEASURE_SEGMENT_LENGTH,
-  MEASURE_POLYLINE_LENGTH,
-  MEASURE_CLOSED_POLYLINE_LENGTH,
-  MEASURE_RECTANGLE_AREA,
-  MEASURE_POLYGON_AREA,
+  SEGMENT,
+  POLYLINE,
+  CLOSED_POLYLINE,
+  RECTANGLE,
+  POLYGON,
 
-  DEFAULT_MODE = MEASURE_SEGMENT_LENGTH
+  DEFAULT_TYPE = SEGMENT
 };
 
-enum ModeKind
-{
-  LENGTH,
-  AREA
+enum Dimensionality {
+  FIGURE_1D,
+  FIGURE_2D
 };
 
-static inline ModeKind getModeKind(Mode mode)
+static inline Dimensionality getDimensionality(FigureType figureType)
 {
-  switch (mode) {
-    case MEASURE_SEGMENT_LENGTH:
-    case MEASURE_POLYLINE_LENGTH:
-    case MEASURE_CLOSED_POLYLINE_LENGTH:
-      return LENGTH;
-    case MEASURE_POLYGON_AREA:
-    case MEASURE_RECTANGLE_AREA:
-      return AREA;
+  switch (figureType) {
+    case SEGMENT:
+    case POLYLINE:
+    case CLOSED_POLYLINE:
+      return FIGURE_1D;
+    case POLYGON:
+    case RECTANGLE:
+      return FIGURE_2D;
   }
   abort();
 }

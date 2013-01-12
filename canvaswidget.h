@@ -4,22 +4,25 @@
 #include <QWidget>
 
 #include "defines.h"
+#include "figure.h"
 
 class MainWindow;
 class QLabel;
 class QScrollArea;
 
 // in all variables ``original'' prefix means ``in original scale''
+//TODO: change naming, it's counterintuitive
 
 class CanvasWidget : public QWidget
 {
   Q_OBJECT
 
 public:
-  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea, QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
+  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea,
+               QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
   ~CanvasWidget();
 
-  void setMode(Mode newMode);
+  void setMode(FigureType newMode);
   bool isEtalonCorrect() const;
 
 public slots:
@@ -27,13 +30,6 @@ public slots:
   void toggleRuler(bool showRuler);
 
 private:
-  // Constant
-  QColor etalonStaticPen_;
-  QColor etalonActivePen_;
-  QColor staticPen_;
-  QColor activePen_;
-  QColor errorPen_;
-
   // Global
   MainWindow* mainWindow_;
   QScrollArea* scrollArea_;
@@ -43,9 +39,8 @@ private:
   QPixmap image_;
 
   // Current state
-  Mode mode_;
+  FigureType figureType_;
   bool etalonDefinition_;
-  bool etalonDefinedRecently_;
   bool showRuler_;
 
   // Scale
@@ -59,11 +54,7 @@ private:
 
   // Drawings
   QPoint originalPointUnderMouse_;
-  QPolygon originalPolygon_;
-  bool polygonFinished_;
-  QPolygon etalonPolygon_;
-  Mode etalonPolygonMode_;
-  QString statusText_;
+  QList<Figure> figures_;
 
   // Scroll
   QPoint scrollStartPoint_;
@@ -77,18 +68,14 @@ private:
   virtual void mouseDoubleClickEvent(QMouseEvent* event);
   virtual bool eventFilter(QObject* object, QEvent* event);
 
-  void getActivePolygon(bool scaled, QPolygon& polygon, Mode& mode, bool& isEtalon, PolygonCorrectness& correctness) const;
+  Figure& activeFigure();
 
-  void drawFramed(QPainter& painter, const QList<QRect>& objects, int frameThickness, const QColor& objectsColor, const QColor& frameColor);
   void drawRuler(QPainter& painter, const QRect& rect);
 
   void finishPlotting();
-  void saveEtalonPolygon();
-  void resetPolygon();
+  void addNewFigure();
   void resetAll();
   void scaleChanged();
-
-  void updateStatusText();
   void updateAll();
 };
 
