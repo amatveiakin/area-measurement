@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include <QFileDialog>
+#include <QFontDialog>
 #include <QImageReader>
 #include <QLabel>
 #include <QMenu>
@@ -34,6 +35,7 @@ MainWindow::MainWindow(QWidget* parent) :
   measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"),        modeActionGroup);
   measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"),        modeActionGroup);
   toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"),        this);
+  customizeInscriptionFontAction    = new QAction(QIcon(":/pictures/font.png"),                   QString::fromUtf8("Настроить шрифт подписей"),                  this);
   aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                  QString::fromUtf8("О программе"),                               this);
 
   openRecentMenu = new QMenu(this);
@@ -56,6 +58,7 @@ MainWindow::MainWindow(QWidget* parent) :
   ui->mainToolBar->addActions(modeActionGroup->actions());
   ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(toggleRulerAction);
+  ui->mainToolBar->addAction(customizeInscriptionFontAction);
   ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(aboutAction);
   ui->mainToolBar->setIconSize(QSize(32, 32));
@@ -72,8 +75,9 @@ MainWindow::MainWindow(QWidget* parent) :
 
   canvasWidget = 0;
 
-  connect(openFileAction, SIGNAL(triggered()), this, SLOT(openNewFile()));
-  connect(aboutAction,    SIGNAL(triggered()), this, SLOT(showAbout()));
+  connect(openFileAction,                 SIGNAL(triggered()), this, SLOT(openNewFile()));
+  connect(customizeInscriptionFontAction, SIGNAL(triggered()), this, SLOT(customizeInscriptionFont()));
+  connect(aboutAction,                    SIGNAL(triggered()), this, SLOT(showAbout()));
 
   connect(toggleEtalonModeAction, SIGNAL(toggled(bool)),       this, SLOT(toggleEtalonDefinition(bool)));
   connect(modeActionGroup,        SIGNAL(triggered(QAction*)), this, SLOT(updateMode(QAction*)));
@@ -114,6 +118,11 @@ QString MainWindow::appVersionString() const
 }
 
 
+QFont MainWindow::getInscriptionFont() const
+{
+  return inscriptionFont;
+}
+
 void MainWindow::setMode(Mode newMode)
 {
   if (canvasWidget)
@@ -153,6 +162,7 @@ void MainWindow::doOpenFile(const QString& imageFile)
 void MainWindow::loadSettings()
 {
   QSettings settings(companyName(), appName ());
+  inscriptionFont = settings.value("Inscription Font", QFont()).value<QFont>();
   recentFiles.clear();
   int nRecent = settings.beginReadArray("Recent Documents");
   for (int i = 0; i < nRecent; ++i) {
@@ -172,6 +182,7 @@ void MainWindow::saveSettings() const
 {
   QSettings settings(companyName(), appName ());
   settings.clear();
+  settings.setValue("Inscription Font", inscriptionFont);
   settings.beginWriteArray("Recent Documents");
   for (int i = 0; i < recentFiles.size(); ++i) {
     settings.setArrayIndex(i);
@@ -260,6 +271,13 @@ void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
   }
   else
     toggleEtalonModeAction->setChecked(true);
+}
+
+void MainWindow::customizeInscriptionFont()
+{
+  inscriptionFont = QFontDialog::getFont(0, inscriptionFont, this);
+  if (canvasWidget)
+    canvasWidget->update();
 }
 
 void MainWindow::showAbout()

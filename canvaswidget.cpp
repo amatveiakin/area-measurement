@@ -89,6 +89,7 @@ CanvasWidget::~CanvasWidget()
 void CanvasWidget::paintEvent(QPaintEvent* event)
 {
   QPainter painter(this);
+  painter.setFont(mainWindow_->getInscriptionFont());
   painter.drawPixmap(event->rect().topLeft() , image_, event->rect());
 
   QPolygon activePolygon;
@@ -117,6 +118,16 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
     painter.drawPolyline(activePolygon);
   else
     painter.drawPolygon(activePolygon);
+
+  if (!statusText_.isEmpty()) {
+    QPoint pivot = activePolygon.first();
+    foreach (QPoint v, activePolygon)
+      if (    v.y() <  pivot.y()
+          || (v.y() == pivot.y() && v.x() < pivot.x()))
+        pivot = v;
+    painter.setPen(Qt::black);
+    painter.drawText(pivot + QPoint(painter.fontMetrics().averageCharWidth() / 2, painter.fontMetrics().height()), statusText_);
+  }
 
   if (showRuler_)
     drawRuler(painter, event->rect());
@@ -286,10 +297,6 @@ void CanvasWidget::finishPlotting()
   finishPolygon(originalPolygon_, mode_);
   polygonFinished_ = true;
 
-  qDebug(" ");
-  foreach (QPoint v, originalPolygon_)
-    qDebug("%d, %d", v.x(), v.y());
-
   if (etalonDefinition_) {
     double originalEtalonPixelLength = 0.;
     QString prompt;
@@ -361,6 +368,7 @@ void CanvasWidget::scaleChanged()
 
 void CanvasWidget::updateStatusText()
 {
+  statusText_.clear();
   statusLabel_->clear();
   QPolygon activePolygon;
   Mode activeMode;
@@ -374,14 +382,18 @@ void CanvasWidget::updateStatusText()
       switch (getModeKind(activeMode)) {
         case LENGTH: {
           double length = polylineLength(activePolygon) * originalMetersPerPixel_;
-          if (length > eps)
-            statusLabel_->setText(QString::fromUtf8("Длина%1: %2 %3").arg(etalonString).arg(length).arg(linearUnit));
+          if (length > eps) {
+            statusText_ = QString("%1 %2").arg(length).arg(linearUnit);
+            statusLabel_->setText(QString::fromUtf8("Длина%1: %2").arg(etalonString).arg(statusText_));
+          }
           break;
         }
         case AREA: {
           double area = polygonArea(activePolygon) * sqr(originalMetersPerPixel_);
-          if (area > eps)
-            statusLabel_->setText(QString::fromUtf8("Площадь%1: %2 %3").arg(etalonString).arg(area).arg(squareUnit));
+          if (area > eps) {
+            statusText_ = QString("%1 %2").arg(area).arg(squareUnit);
+            statusLabel_->setText(QString::fromUtf8("Площадь%1: %2").arg(etalonString).arg(statusText_));
+          }
           break;
         }
       }

@@ -8,5 +8,6 @@
         <file>pictures/segment_length.png</file>
         <file>pictures/toggle_ruler.png</file>
         <file>pictures/about.png</file>
+        <file>pictures/font.png</file>
     </qresource>
 </RCC>

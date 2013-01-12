@@ -27,12 +27,14 @@ public slots:
   void toggleRuler(bool showRuler);
 
 private:
+  // Constant
   QColor etalonStaticPen_;
   QColor etalonActivePen_;
   QColor staticPen_;
   QColor activePen_;
   QColor errorPen_;
 
+  // Global
   MainWindow* mainWindow_;
   QScrollArea* scrollArea_;
   QLabel* scaleLabel_;
@@ -40,24 +42,30 @@ private:
   const QPixmap* originalImage_;  // Owner
   QPixmap image_;
 
+  // Current state
   Mode mode_;
   bool etalonDefinition_;
   bool etalonDefinedRecently_;
   bool showRuler_;
 
+  // Scale
   QList<double> acceptableScales_;
   int iScale_;
   double scale_;
 
+  // Length etalon
   double originalMetersPerPixel_;
   double metersPerPixel_;
 
+  // Drawings
   QPoint originalPointUnderMouse_;
   QPolygon originalPolygon_;
   bool polygonFinished_;
   QPolygon etalonPolygon_;
   Mode etalonPolygonMode_;
+  QString statusText_;
 
+  // Scroll
   QPoint scrollStartPoint_;
   int scrollStartHValue_;
   int scrollStartVValue_;

@@ -23,6 +23,7 @@ public:
   QList<int> appVersion() const;
   QString appVersionString() const;
 
+  QFont getInscriptionFont() const;
   void setMode(Mode newMode);
 
 public slots:
@@ -30,6 +31,7 @@ public slots:
 
 private:
   QStringList recentFiles;
+  QFont inscriptionFont;
 
   Ui::MainWindow* ui;
 
@@ -47,6 +49,7 @@ private:
   QAction* measureRectangleAreaAction;
   QAction* measurePolygonAreaAction;
   QAction* toggleRulerAction;
+  QAction* customizeInscriptionFontAction;
   QAction* aboutAction;
 
   void doOpenFile(const QString& filename);
@@ -60,6 +63,7 @@ private slots:
   void openRecentFile();
   void setDrawOptionsEnabled(bool enabled);
   void updateMode(QAction* modeAction);
+  void customizeInscriptionFont();
   void showAbout();
 };
 
