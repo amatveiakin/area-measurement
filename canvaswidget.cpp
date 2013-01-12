@@ -52,11 +52,11 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   scrollArea_->viewport()->installEventFilter(this);
   setMouseTracking(true);
   figureType_ = DEFAULT_TYPE;
-  etalonDefinition_ = true;
+  isDefiningEtalon_ = true;
   showRuler_ = false;
   originalMetersPerPixel_ = 0.;
   metersPerPixel_ = 0.;
-  addNewFigure();
+  figures_.append(newFigure(true));
   scaleChanged();
 }
 
@@ -160,9 +160,9 @@ QPixmap CanvasWidget::getModifiedImage()
 
 void CanvasWidget::toggleEtalonDefinition(bool isDefiningEtalon)
 {
-  if (etalonDefinition_ == isDefiningEtalon)
+  if (isDefiningEtalon_ == isDefiningEtalon)
     return;
-  etalonDefinition_ = isDefiningEtalon;
+  isDefiningEtalon_ = isDefiningEtalon;
   resetAll();
 }
 
@@ -178,7 +178,14 @@ void CanvasWidget::toggleRuler(bool showRuler)
 Figure& CanvasWidget::activeFigure()
 {
   assert(!figures_.isEmpty());
-  return figures_.last();
+  if (isDefiningEtalon_) {
+    assert(figures_.first().isEtalon());
+    return figures_.first();
+  }
+  else {
+    assert(!figures_.last().isEtalon());
+    return figures_.last();
+  }
 }
 
 
@@ -221,9 +228,9 @@ void CanvasWidget::finishPlotting()
 {
   activeFigure().finish();
   QPolygon originalPolygonDrawn = activeFigure().originalPolygon();
-  addNewFigure();
+  figures_.append(newFigure(false));
 
-  if (etalonDefinition_) {
+  if (isDefiningEtalon_) {
     double originalEtalonPixelLength = 0.;
     QString prompt;
     switch (getDimensionality(figureType_)) {
@@ -257,16 +264,14 @@ void CanvasWidget::finishPlotting()
   updateAll();
 }
 
-void CanvasWidget::addNewFigure()
+Figure CanvasWidget::newFigure(bool isEtalon)
 {
-  figures_.append(Figure(figureType_, etalonDefinition_, &originalMetersPerPixel_, &scale_, &originalPointUnderMouse_));
+  return Figure(figureType_, isEtalon, &originalMetersPerPixel_, &scale_, &originalPointUnderMouse_);
 }
 
 void CanvasWidget::resetAll()
 {
-  assert(!figures_.isEmpty());
-  figures_.removeLast();
-  addNewFigure();
+  activeFigure() = newFigure(isDefiningEtalon_);
   updateAll();
 }
 

@@ -27,7 +27,7 @@ public:
   QPixmap getModifiedImage();
 
 public slots:
-  void toggleEtalonDefinition(bool etalonMode);
+  void toggleEtalonDefinition(bool isDefiningEtalon);
   void toggleRuler(bool showRuler);
 
 private:
@@ -41,7 +41,7 @@ private:
 
   // Current state
   FigureType figureType_;
-  bool etalonDefinition_;
+  bool isDefiningEtalon_;
   bool showRuler_;
 
   // Scale
@@ -74,7 +74,7 @@ private:
   void drawRuler(QPainter& painter, const QRect& rect);
 
   void finishPlotting();
-  void addNewFigure();
+  Figure newFigure(bool isEtalon);
   void resetAll();
   void scaleChanged();
   void updateAll();
