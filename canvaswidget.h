@@ -24,6 +24,7 @@ public:
 
   void setMode(FigureType newMode);
   bool isEtalonCorrect() const;
+  QPixmap getModifiedImage();
 
 public slots:
   void toggleEtalonDefinition(bool etalonMode);

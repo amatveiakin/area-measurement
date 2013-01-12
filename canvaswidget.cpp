@@ -56,8 +56,8 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   showRuler_ = false;
   originalMetersPerPixel_ = 0.;
   metersPerPixel_ = 0.;
-  scaleChanged();
   addNewFigure();
+  scaleChanged();
 }
 
 CanvasWidget::~CanvasWidget()
@@ -127,7 +127,6 @@ bool CanvasWidget::eventFilter(QObject* object, QEvent* event__)
     while (size * acceptableScales_[iScale_] > maxImageSize && acceptableScales_[iScale_] > 1.)
       iScale_--;
     scaleChanged();
-    updateAll();
     return true;
   }
   return false;
@@ -144,6 +143,18 @@ void CanvasWidget::setMode(FigureType newMode)
 bool CanvasWidget::isEtalonCorrect() const
 {
   return originalMetersPerPixel_ > 0.;
+}
+
+QPixmap CanvasWidget::getModifiedImage()
+{
+  int oldIScale = iScale_;
+  iScale_ = acceptableScales_.indexOf(1.00);
+  scaleChanged();
+  QPixmap resultingImage(size());
+  render(&resultingImage);
+  iScale_ = oldIScale;
+  scaleChanged();
+  return resultingImage;
 }
 
 
@@ -266,6 +277,7 @@ void CanvasWidget::scaleChanged()
   metersPerPixel_ = originalMetersPerPixel_ / scale_;
   setFixedSize(image_.size());
   scaleLabel_->setText(QString::number(scale_ * 100.) + "%");
+  updateAll();
 }
 
 void CanvasWidget::updateAll()

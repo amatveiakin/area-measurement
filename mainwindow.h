@@ -42,6 +42,7 @@ private:
 
   QActionGroup* modeActionGroup;
   QAction* openFileAction;
+  QAction* saveFileAction;
   QAction* toggleEtalonModeAction;
   QAction* measureSegmentLengthAction;
   QAction* measurePolylineLengthAction;
@@ -52,15 +53,18 @@ private:
   QAction* customizeInscriptionFontAction;
   QAction* aboutAction;
 
+  QString getImageFormatsFilter() const;
   void doOpenFile(const QString& filename);
+  void doSaveFile(const QString& filename);
   void loadSettings();
   void loadAndApplySettings();
   void saveSettings() const;
   void updateOpenRecentMenu();
 
 private slots:
-  void openNewFile();
+  void openFile();
   void openRecentFile();
+  void saveFile();
   void setDrawOptionsEnabled(bool enabled);
   void updateMode(QAction* modeAction);
   void customizeInscriptionFont();

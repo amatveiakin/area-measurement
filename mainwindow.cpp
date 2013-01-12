@@ -27,19 +27,21 @@ MainWindow::MainWindow(QWidget* parent) :
   setWindowTitle(appName());
 
   modeActionGroup = new QActionGroup(this);
-  openFileAction                    = new QAction(style()->standardIcon (QStyle::SP_DirOpenIcon), QString::fromUtf8("Открыть файл"),                              this);
-  toggleEtalonModeAction            = new QAction(QIcon(":/pictures/etalon.png"),                 QString::fromUtf8("Включить/выключить режим задания эталона"),  this);
-  measureSegmentLengthAction        = new QAction(QIcon(":/pictures/segment_length.png"),         QString::fromUtf8("Измерение длин отрезков"),                   modeActionGroup);
-  measurePolylineLengthAction       = new QAction(QIcon(":/pictures/polyline_length.png"),        QString::fromUtf8("Измерение длин кривых"),                     modeActionGroup);
-  measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.png"), QString::fromUtf8("Измерение длин замкнутых кривых"),           modeActionGroup);
-  measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),         QString::fromUtf8("Измерение площадей прямоугольников"),        modeActionGroup);
-  measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),           QString::fromUtf8("Измерение площадей многоугольников"),        modeActionGroup);
-  toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),           QString::fromUtf8("Показать/скрыть масштабную линейку"),        this);
-  customizeInscriptionFontAction    = new QAction(QIcon(":/pictures/font.png"),                   QString::fromUtf8("Настроить шрифт подписей"),                  this);
-  aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                  QString::fromUtf8("О программе"),                               this);
+  openFileAction                    = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton), QString::fromUtf8("Открыть файл"),                              this);
+  saveFileAction                    = new QAction(style()->standardIcon(QStyle::SP_DialogSaveButton), QString::fromUtf8("Сохранить файл"),                            this);
+  toggleEtalonModeAction            = new QAction(QIcon(":/pictures/etalon.png"),                     QString::fromUtf8("Включить/выключить режим задания эталона"),  this);
+  measureSegmentLengthAction        = new QAction(QIcon(":/pictures/segment_length.png"),             QString::fromUtf8("Измерение длин отрезков"),                   modeActionGroup);
+  measurePolylineLengthAction       = new QAction(QIcon(":/pictures/polyline_length.png"),            QString::fromUtf8("Измерение длин кривых"),                     modeActionGroup);
+  measureClosedPolylineLengthAction = new QAction(QIcon(":/pictures/closed_polyline_length.png"),     QString::fromUtf8("Измерение длин замкнутых кривых"),           modeActionGroup);
+  measureRectangleAreaAction        = new QAction(QIcon(":/pictures/rectangle_area.png"),             QString::fromUtf8("Измерение площадей прямоугольников"),        modeActionGroup);
+  measurePolygonAreaAction          = new QAction(QIcon(":/pictures/polygon_area.png"),               QString::fromUtf8("Измерение площадей многоугольников"),        modeActionGroup);
+  toggleRulerAction                 = new QAction(QIcon(":/pictures/toggle_ruler.png"),               QString::fromUtf8("Показать/скрыть масштабную линейку"),        this);
+  customizeInscriptionFontAction    = new QAction(QIcon(":/pictures/font.png"),                       QString::fromUtf8("Настроить шрифт подписей"),                  this);
+  aboutAction                       = new QAction(QIcon(":/pictures/about.png"),                      QString::fromUtf8("О программе"),                               this);
 
   openRecentMenu = new QMenu(this);
   openFileAction->setMenu(openRecentMenu);
+  saveFileAction->setEnabled(false);
 
   toggleEtalonModeAction->setCheckable(true);
   toggleEtalonModeAction->setChecked(true);
@@ -52,6 +54,7 @@ MainWindow::MainWindow(QWidget* parent) :
   toggleRulerAction->setChecked(true);
 
   ui->mainToolBar->addAction(openFileAction);
+  ui->mainToolBar->addAction(saveFileAction);
   ui->mainToolBar->addSeparator();
   ui->mainToolBar->addAction(toggleEtalonModeAction);
   ui->mainToolBar->addSeparator();
@@ -75,7 +78,8 @@ MainWindow::MainWindow(QWidget* parent) :
 
   canvasWidget = 0;
 
-  connect(openFileAction,                 SIGNAL(triggered()), this, SLOT(openNewFile()));
+  connect(openFileAction,                 SIGNAL(triggered()), this, SLOT(openFile()));
+  connect(saveFileAction,                 SIGNAL(triggered()), this, SLOT(saveFile()));
   connect(customizeInscriptionFontAction, SIGNAL(triggered()), this, SLOT(customizeInscriptionFont()));
   connect(aboutAction,                    SIGNAL(triggered()), this, SLOT(showAbout()));
 
@@ -130,17 +134,39 @@ void MainWindow::setMode(FigureType newMode)
 }
 
 
-void MainWindow::doOpenFile(const QString& imageFile)
+QString MainWindow::getImageFormatsFilter() const
+{
+  QList<QByteArray> supportedFormatsList__ = QImageReader::supportedImageFormats();
+  QSet<QString> supportedFormatsSet;
+  foreach (const QByteArray& format, supportedFormatsList__)
+    supportedFormatsSet.insert(QString(format).toLower());
+  QStringList supportedFormatsList(supportedFormatsSet.toList());
+  qSort(supportedFormatsList);
+  QString allFormatsString;
+  QStringList singleFormatsList;
+  foreach (const QString& lowerFormat, supportedFormatsList) {
+    QString upperFormat = lowerFormat.toUpper();
+    allFormatsString += QString("*.%1 ").arg(lowerFormat);
+    if (upperFormat == "JPEG")
+      singleFormatsList += QString::fromUtf8("Изображения JPEG (*.jpeg *.jpg)");
+    else if (upperFormat != "JPG")
+      singleFormatsList += QString::fromUtf8("Изображения %1 (*.%2)").arg(upperFormat).arg(lowerFormat);
+  }
+  allFormatsString = allFormatsString.trimmed();
+  return QString::fromUtf8("Все изображения (%1);;").arg(allFormatsString) + singleFormatsList.join(";;");
+}
+
+void MainWindow::doOpenFile(const QString& filename)
 {
   QPixmap* image = new QPixmap;
-  if (!image->load(imageFile)) {
-    QMessageBox::warning(this, appName(), QString::fromUtf8("Не могу открыть изображение \"%1\".").arg(imageFile));
+  if (!image->load(filename)) {
+    QMessageBox::warning(this, appName(), QString::fromUtf8("Не могу открыть изображение «%1».").arg(filename));
     delete image;
     return;
   }
 
-  recentFiles.removeAll(imageFile);
-  recentFiles.prepend(imageFile);
+  recentFiles.removeAll(filename);
+  recentFiles.prepend(filename);
   if (recentFiles.size() > maxRecentDocuments)
     recentFiles.erase(recentFiles.begin() + maxRecentDocuments, recentFiles.end());
   updateOpenRecentMenu();
@@ -155,13 +181,24 @@ void MainWindow::doOpenFile(const QString& imageFile)
   connect(toggleRulerAction, SIGNAL(toggled(bool)), canvasWidget, SLOT(toggleRuler(bool)));
   canvasWidget->toggleRuler(toggleRulerAction->isChecked());
 
+  saveFileAction->setEnabled(true);
   saveSettings();
   setDrawOptionsEnabled(true);
 }
 
+void MainWindow::doSaveFile(const QString& filename)
+{
+  assert(canvasWidget);
+  bool ok = canvasWidget->getModifiedImage().save(filename);
+  if (ok)
+    ui->statusBar->showMessage(QString::fromUtf8("Файл успешно сохранён"), 5000);
+  else
+    QMessageBox::warning(this, appName(), QString::fromUtf8("Не удалось записать файл «%1»!").arg(filename));
+}
+
 void MainWindow::loadSettings()
 {
-  QSettings settings(companyName(), appName ());
+  QSettings settings(companyName(), appName());
   inscriptionFont = settings.value("Inscription Font", QFont()).value<QFont>();
   recentFiles.clear();
   int nRecent = settings.beginReadArray("Recent Documents");
@@ -180,7 +217,7 @@ void MainWindow::loadAndApplySettings()
 
 void MainWindow::saveSettings() const
 {
-  QSettings settings(companyName(), appName ());
+  QSettings settings(companyName(), appName());
   settings.clear();
   settings.setValue("Inscription Font", inscriptionFont);
   settings.beginWriteArray("Recent Documents");
@@ -204,31 +241,12 @@ void MainWindow::updateOpenRecentMenu()
 }
 
 
-void MainWindow::openNewFile()
+void MainWindow::openFile()
 {
-  QList<QByteArray> supportedFormatsList__ = QImageReader::supportedImageFormats();
-  QSet<QString> supportedFormatsSet;
-  foreach (const QByteArray& format, supportedFormatsList__)
-    supportedFormatsSet.insert(QString(format).toLower());
-  QStringList supportedFormatsList(supportedFormatsSet.toList());
-  qSort(supportedFormatsList);
-  QString allFormatsString;
-  QStringList singleFormatsList;
-  foreach (const QString& lowerFormat, supportedFormatsList) {
-    QString upperFormat = lowerFormat.toUpper();
-    allFormatsString += QString("*.%1 ").arg(lowerFormat);
-    if (upperFormat == "JPEG")
-      singleFormatsList += QString::fromUtf8("Изображения JPEG (*.jpeg *.jpg)");
-    else if (upperFormat != "JPG")
-      singleFormatsList += QString::fromUtf8("Изображения %1 (*.%2)").arg(upperFormat).arg(lowerFormat);
-  }
-  allFormatsString = allFormatsString.trimmed();
-  QString formatsList = QString::fromUtf8("Все изображения (%1);;").arg(allFormatsString) + singleFormatsList.join(";;");
-
-  QString imageFile = QFileDialog::getOpenFileName (this, QString::fromUtf8("Укажите путь к изображению — ") + appName(),
-                                                    QString(), formatsList, 0);
-  if (!imageFile.isEmpty())
-    doOpenFile(imageFile);
+  QString filename = QFileDialog::getOpenFileName(this, QString::fromUtf8("Открыть изображение — ") + appName(),
+                                                  QString(), getImageFormatsFilter(), 0);
+  if (!filename.isEmpty())
+    doOpenFile(filename);
 }
 
 void MainWindow::openRecentFile()
@@ -236,6 +254,14 @@ void MainWindow::openRecentFile()
   QAction* triggeredAction = qobject_cast<QAction*>(sender());
   assert(triggeredAction);
   doOpenFile(triggeredAction->text());
+}
+
+void MainWindow::saveFile()
+{
+  QString filename = QFileDialog::getSaveFileName(this, QString::fromUtf8("Сохранить изображение — ") + appName(),
+                                                  QString(), getImageFormatsFilter(), 0);
+  if (!filename.isEmpty())
+    doSaveFile(filename);
 }
 
 void MainWindow::setDrawOptionsEnabled(bool enabled)
