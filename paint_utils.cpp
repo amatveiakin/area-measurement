@@ -58,7 +58,12 @@ void TextDrawer::drawText()
 TextDrawer drawTextWithBackground(QPainter& painter, const QString& text, QPoint pos)
 {
   QRect textRect = painter.fontMetrics().boundingRect(text);
-  painter.fillRect(textRect.translated(pos), QColor(255, 255, 255, 200));
+  painter.fillRect(textRect.translated(pos), QColor(255, 255, 255, 160));
+  painter.setPen(QColor(255, 255, 255, 200));
+  painter.drawText(pos + QPoint( 1,  1), text);
+  painter.drawText(pos + QPoint( 1, -1), text);
+  painter.drawText(pos + QPoint(-1,  1), text);
+  painter.drawText(pos + QPoint(-1, -1), text);
   return TextDrawer(painter, text, pos);
 }
 
