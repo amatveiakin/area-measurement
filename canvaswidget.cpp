@@ -70,6 +70,7 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
 {
   QPainter painter(this);
   painter.setFont(mainWindow_->getInscriptionFont());
+  painter.setRenderHint(QPainter::Antialiasing, true);
   painter.drawPixmap(event->rect().topLeft(), image_, event->rect());
 
   foreach (const Figure& figure, figures_)
