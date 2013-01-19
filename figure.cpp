@@ -11,11 +11,11 @@ const QString linearUnitSuffix = QString::fromUtf8("м");
 const QString squareUnitSuffix = linearUnitSuffix + QString::fromUtf8("²");
 
 
-QColor Figure::etalonStaticPen_ = QColor(  0, 150,   0);
-QColor Figure::etalonActivePen_ = QColor(  0, 200,   0);
-QColor Figure::staticPen_       = QColor(  0,  50, 240);
-QColor Figure::activePen_       = QColor(  0, 100, 240);
-QColor Figure::errorPen_        = QColor(255,   0,   0);
+const QColor etalonStaticPen_ = QColor(  0, 150,   0);
+const QColor etalonActivePen_ = QColor(  0, 200,   0);
+const QColor staticPen_       = QColor(  0,  50, 240);
+const QColor activePen_       = QColor(  0, 100, 240);
+const QColor errorPen_        = QColor(255,   0,   0);
 
 static inline QColor getFillColor(QColor penColor)
 {

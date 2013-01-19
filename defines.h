@@ -12,7 +12,8 @@ enum FigureType
   DEFAULT_TYPE = SEGMENT
 };
 
-enum Dimensionality {
+enum Dimensionality
+{
   FIGURE_1D,
   FIGURE_2D
 };
@@ -32,7 +33,8 @@ static inline Dimensionality getDimensionality(FigureType figureType)
 }
 
 
-enum PolygonCorrectness {
+enum PolygonCorrectness
+{
   VALID_POLYGON,
   SELF_INTERSECTING_POLYGON
 };

@@ -28,12 +28,6 @@ public:
   QString statusString() const;
 
 private:
-  static QColor etalonStaticPen_;
-  static QColor etalonActivePen_;
-  static QColor staticPen_;
-  static QColor activePen_;
-  static QColor errorPen_;
-
   FigureType figureType_;
   bool isEtalon_;
   bool isFinished_;
@@ -42,7 +36,7 @@ private:
   const double* originalMetersPerPixel_;
   const double* scale_;
   QPointF* originalPointUnderMouse_;
-  double size_;   // length or area
+  double size_;   // length or area  // TODO: Use it or delete it
   QColor penColor_;
 
   QPolygonF getActiveOriginalPolygon(PolygonCorrectness& correctness) const;
