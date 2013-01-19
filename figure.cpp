@@ -31,7 +31,7 @@ static inline void setColor(QPainter& painter, QColor penColor)
 
 
 Figure::Figure(FigureType figureType, bool isEtalon, const double* originalMetersPerPixel,
-               const double* scale, QPoint* originalPointUnderMouse) :
+               const double* scale, QPointF* originalPointUnderMouse) :
   figureType_(figureType),
   isEtalon_(isEtalon),
   isFinished_(false),
@@ -47,7 +47,7 @@ Figure::Figure(FigureType figureType, bool isEtalon, const double* originalMeter
 }
 
 
-bool Figure::addPoint(QPoint originalNewPoint)
+bool Figure::addPoint(QPointF originalNewPoint)
 {
   return addPointToPolygon(originalPolygon_, originalNewPoint, figureType_);
 }
@@ -61,18 +61,19 @@ void Figure::finish()
 void Figure::draw(QPainter& painter) const
 {
   PolygonCorrectness correctness;
-  QPolygon activePolygon = getActiveOriginalPolygon(correctness);
+  QPolygonF activePolygon = getActiveOriginalPolygon(correctness);
   scalePolygon(activePolygon);
 
   TextDrawer inscriptionTextDrawer;
   QString inscription = getInscription();
   if (!inscription.isEmpty()) {
-    QPoint pivot = activePolygon.first();
-    foreach (QPoint v, activePolygon)
+    QPointF pivot = activePolygon.first();
+    foreach (QPointF v, activePolygon)
       if (    v.y() <  pivot.y()
           || (v.y() == pivot.y() && v.x() < pivot.x()))
         pivot = v;
-    inscriptionTextDrawer = drawTextWithBackground(painter, inscription, pivot + QPoint(painter.fontMetrics().averageCharWidth() / 2, painter.fontMetrics().height()));
+    QPoint inscriptionPos = pivot.toPoint() + QPoint(painter.fontMetrics().averageCharWidth() / 2, painter.fontMetrics().height());
+    inscriptionTextDrawer = drawTextWithBackground(painter, inscription, inscriptionPos);
   }
 
   if (correctness != VALID_POLYGON) {
@@ -118,9 +119,9 @@ QString Figure::statusString() const
 }
 
 
-QPolygon Figure::getActiveOriginalPolygon(PolygonCorrectness& correctness) const
+QPolygonF Figure::getActiveOriginalPolygon(PolygonCorrectness& correctness) const
 {
-  QPolygon activeOriginalPolygon = originalPolygon_;
+  QPolygonF activeOriginalPolygon = originalPolygon_;
   if (!isFinished_) {
     addPointToPolygon(activeOriginalPolygon, *originalPointUnderMouse_, figureType_);
     finishPolygon(activeOriginalPolygon, figureType_);
@@ -129,15 +130,15 @@ QPolygon Figure::getActiveOriginalPolygon(PolygonCorrectness& correctness) const
   return activeOriginalPolygon;
 }
 
-void Figure::scalePolygon(QPolygon& polygon) const
+void Figure::scalePolygon(QPolygonF& polygon) const
 {
-  for (QPolygon::Iterator it = polygon.begin(); it != polygon.end(); ++it)
+  for (QPolygonF::Iterator it = polygon.begin(); it != polygon.end(); ++it)
     *it *= *scale_;
 }
 
 QString Figure::getSizeString(PolygonCorrectness& correctness) const
 {
-  QPolygon activePolygon = getActiveOriginalPolygon(correctness);
+  QPolygonF activePolygon = getActiveOriginalPolygon(correctness);
   switch (correctness) {
     case VALID_POLYGON:
       switch (getDimensionality(figureType_)) {

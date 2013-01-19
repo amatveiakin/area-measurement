@@ -15,12 +15,12 @@ const double eps = 1e-6;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Length
 
-double segmentLenght(QPoint a, QPoint b)
+double segmentLenght(QPointF a, QPointF b)
 {
   return std::sqrt(sqr(a.x() - b.x()) + sqr(a.y() - b.y()));
 }
 
-double polylineLength(const QPolygon& polyline)
+double polylineLength(const QPolygonF& polyline)
 {
   double length = 0;
   for (int i = 0; i < polyline.size() - 1; i++)
@@ -32,17 +32,17 @@ double polylineLength(const QPolygon& polyline)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Area
 
-void assertPolygonIsClosed(const QPolygon& polygon)
+void assertPolygonIsClosed(const QPolygonF& polygon)
 {
   assert(polygon.isEmpty() || polygon.first() == polygon.last());
 }
 
-bool testSegmentsCross(QPoint a, QPoint b, QPoint c, QPoint d)
+bool testSegmentsCross(QPointF a, QPointF b, QPointF c, QPointF d)
 {
   return QLineF(a, b).intersect(QLineF(c, d), 0) == QLineF::BoundedIntersection;
 }
 
-bool isSelfintersectingPolygon(const QPolygon& polygon)
+bool isSelfintersectingPolygon(const QPolygonF& polygon)
 {
   assertPolygonIsClosed(polygon);
   int n = polygon.size() - 1;  // cut off last vertex
@@ -58,14 +58,14 @@ bool isSelfintersectingPolygon(const QPolygon& polygon)
   return false;
 }
 
-double triangleSignedArea(QPoint a, QPoint b, QPoint c)
+double triangleSignedArea(QPointF a, QPointF b, QPointF c)
 {
-  QPoint p = b - a;
-  QPoint q = c - a;
+  QPointF p = b - a;
+  QPointF q = c - a;
   return (p.x() * q.y() - p.y() * q.x()) / 2.0;
 }
 
-double polygonArea(const QPolygon& polygon)
+double polygonArea(const QPolygonF& polygon)
 {
   assertPolygonIsClosed(polygon);
   double area = 0;
@@ -78,7 +78,7 @@ double polygonArea(const QPolygon& polygon)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Polygon
 
-bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType)
+bool addPointToPolygon(QPolygonF& polygon, QPointF newPoint, FigureType figureType)
 {
   switch (figureType) {
     case SEGMENT: {
@@ -101,7 +101,7 @@ bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType
         return false;
       }
       else {
-        polygon = QPolygon(QRect(polygon.first(), newPoint), true);
+        polygon = QPolygonF(QRectF(polygon.first(), newPoint));
         return true;
       }
     }
@@ -109,7 +109,7 @@ bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType
   abort();
 }
 
-void finishPolygon(QPolygon& polygon, FigureType figureType)
+void finishPolygon(QPolygonF& polygon, FigureType figureType)
 {
   if (polygon.isEmpty())
     return;
@@ -128,7 +128,7 @@ void finishPolygon(QPolygon& polygon, FigureType figureType)
   abort();
 }
 
-PolygonCorrectness polygonCorrectness(const QPolygon& polygon, FigureType figureType)
+PolygonCorrectness polygonCorrectness(const QPolygonF& polygon, FigureType figureType)
 {
   switch (figureType) {
     case SEGMENT:

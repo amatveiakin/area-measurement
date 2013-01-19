@@ -54,7 +54,7 @@ private:
   double metersPerPixel_;
 
   // Drawings
-  QPoint originalPointUnderMouse_;
+  QPointF originalPointUnderMouse_;
   QList<Figure> figures_;
 
   // Scroll

@@ -2,7 +2,6 @@
 // TODO: compute area for selfintersecting polygons
 // TODO: polygon editing: move points, move segments, add points, delete points, move caption, change color
 // TODO: set scale by two points GPS coordinates
-// TODO: use floating-point numbers to store polygon in original coodinates, for exactness (?)
 // TODO: result printing
 
 #include <cassert>
@@ -83,7 +82,6 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
 void CanvasWidget::mousePressEvent(QMouseEvent* event)
 {
   if (event->buttons() == Qt::LeftButton) {
-    //QPoint originalNewPoint = event->pos() / scale_;
     bool polygonFinished = activeFigure().addPoint(originalPointUnderMouse_);
     if (polygonFinished)
       finishPlotting();
@@ -101,7 +99,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
 void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
 {
   if (event->buttons() == Qt::NoButton) {
-    originalPointUnderMouse_ = event->pos() / scale_;
+    originalPointUnderMouse_ = QPointF(event->pos()) / scale_;
     updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
@@ -228,7 +226,7 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 void CanvasWidget::finishPlotting()
 {
   activeFigure().finish();
-  QPolygon originalPolygonDrawn = activeFigure().originalPolygon();
+  QPolygonF originalPolygonDrawn = activeFigure().originalPolygon();
   figures_.append(newFigure(false));
 
   if (isDefiningEtalon_) {

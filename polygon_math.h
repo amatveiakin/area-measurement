@@ -1,7 +1,7 @@
 #ifndef POLYGON_MATH_H
 #define POLYGON_MATH_H
 
-#include <QPolygon>
+#include <QPolygonF>
 
 #include "defines.h"
 
@@ -9,15 +9,15 @@ extern const double eps;
 
 static inline double sqr(double x) { return x * x; }
 
-double segmentLenght(QPoint a, QPoint b);
-double polylineLength(const QPolygon& polyline);
+double segmentLenght(QPointF a, QPointF b);
+double polylineLength(const QPolygonF& polyline);
 
-bool isSelfintersectingPolygon(const QPolygon& polygon);
-double polygonArea(const QPolygon& polygon);
+bool isSelfintersectingPolygon(const QPolygonF& polygon);
+double polygonArea(const QPolygonF& polygon);
 
-bool addPointToPolygon(QPolygon& polygon, QPoint newPoint, FigureType figureType);
-void finishPolygon(QPolygon& polygon, FigureType figureType);
-PolygonCorrectness polygonCorrectness(const QPolygon& polygon, FigureType figureType);
+bool addPointToPolygon(QPolygonF& polygon, QPointF newPoint, FigureType figureType);
+void finishPolygon(QPolygonF& polygon, FigureType figureType);
+PolygonCorrectness polygonCorrectness(const QPolygonF& polygon, FigureType figureType);
 
 
 #endif // POLYGON_MATH_H

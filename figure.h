@@ -2,7 +2,7 @@
 #define FIGURE_H
 
 #include <QColor>
-#include <QPolygon>
+#include <QPolygonF>
 
 #include "defines.h"
 
@@ -15,14 +15,14 @@ class Figure
 {
 public:
   Figure(FigureType figureType, bool isEtalon, const double* originalMetersPerPixel,
-         const double* scale, QPoint* originalPointUnderMouse);
+         const double* scale, QPointF* originalPointUnderMouse);
 
-  FigureType figureType() const           { return figureType_; }
-  bool isEtalon() const                   { return isEtalon_; }
-  bool isFinished() const                 { return isFinished_; }
-  const QPolygon& originalPolygon() const { return originalPolygon_; }
+  FigureType figureType() const            { return figureType_; }
+  bool isEtalon() const                    { return isEtalon_; }
+  bool isFinished() const                  { return isFinished_; }
+  const QPolygonF& originalPolygon() const { return originalPolygon_; }
 
-  bool addPoint(QPoint originalNewPoint);
+  bool addPoint(QPointF originalNewPoint);
   void finish();
   void draw(QPainter& painter) const;
   QString statusString() const;
@@ -37,16 +37,16 @@ private:
   FigureType figureType_;
   bool isEtalon_;
   bool isFinished_;
-  QPolygon originalPolygon_;
-  QPoint originalInscriptionPos_;  // TODO: Use it
+  QPolygonF originalPolygon_;
+  QPointF originalInscriptionPos_;  // TODO: Use it
   const double* originalMetersPerPixel_;
   const double* scale_;
-  QPoint* originalPointUnderMouse_;
+  QPointF* originalPointUnderMouse_;
   double size_;   // length or area
   QColor penColor_;
 
-  QPolygon getActiveOriginalPolygon(PolygonCorrectness& correctness) const;
-  void scalePolygon(QPolygon& polygon) const;
+  QPolygonF getActiveOriginalPolygon(PolygonCorrectness& correctness) const;
+  void scalePolygon(QPolygonF& polygon) const;
   QString getSizeString(PolygonCorrectness& correctness) const;
   QString getInscription() const;
 };
