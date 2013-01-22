@@ -41,7 +41,7 @@ Figure::Figure(FigureType figureType, bool isEtalon, const double* originalMeter
   scale_(scale),
   originalPointUnderMouse_(originalPointUnderMouse),
   size_(0.),
-  penColor_(isEtalon ? etalonStaticPen_ : activePen_)
+  penColor_(isEtalon ? etalonStaticPen_ : staticPen_)
   //penColor_(QColor::fromHsv(rand() % 360, 255, 127))
 {
 }
