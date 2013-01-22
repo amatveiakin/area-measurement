@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 
 #include <QPainter>
 
@@ -108,6 +109,7 @@ void Figure::draw(QPainter& painter) const
       setColor(painter, activePen_);
   }
 
+  snapPolygonToPixelGrid(activePolygon);
   switch (getDimensionality(figureType_)) {
     case FIGURE_1D: painter.drawPolyline(activePolygon); break;
     case FIGURE_2D: painter.drawPolygon (activePolygon); break;
@@ -154,6 +156,13 @@ void Figure::scalePolygon(QPolygonF& polygon) const
 {
   for (QPolygonF::Iterator it = polygon.begin(); it != polygon.end(); ++it)
     *it *= canvas_->scale_;
+}
+
+// QPainter with antialiasing gives clearer results for horisontal and vertical lines after this function
+void Figure::snapPolygonToPixelGrid(QPolygonF& polygon) const
+{
+  for (int i = 0; i < polygon.size(); ++i)
+    polygon[i] = QPointF(floor(polygon[i].x()) + 0.5, floor(polygon[i].y()) + 0.5);
 }
 
 QString Figure::getSizeString(PolygonCorrectness& correctness) const

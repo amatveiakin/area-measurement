@@ -42,6 +42,7 @@ private:
 
   QPolygonF getActiveOriginalPolygon(PolygonCorrectness *correctness = 0) const;
   void scalePolygon(QPolygonF& polygon) const;
+  void snapPolygonToPixelGrid(QPolygonF& polygon) const;
   QString getSizeString(PolygonCorrectness& correctness) const;
   QString getInscription() const;
   bool isSelected() const;
