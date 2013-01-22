@@ -99,7 +99,9 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
 void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
 {
   if (event->buttons() == Qt::NoButton) {
-    originalPointUnderMouse_ = QPointF(event->pos()) / scale_;
+    pointUnderMouse_ = event->pos();
+    originalPointUnderMouse_ = pointUnderMouse_ / scale_;
+    updateSelection(hover_);
     updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
@@ -187,6 +189,19 @@ Figure& CanvasWidget::activeFigure()
   }
 }
 
+Figure CanvasWidget::newFigure(bool isEtalon) const
+{
+  return Figure(figureType_, isEtalon, this);
+}
+
+void CanvasWidget::prepareToRemoveFigure(const Figure *figure)
+{
+  if (selection_.figure == figure)
+    selection_.reset();
+  if (hover_.figure == figure)
+    hover_.reset();
+}
+
 
 void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 {
@@ -222,6 +237,18 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
   drawTextWithBackground(painter, rulerLabel, labelPos);
 }
 
+
+void CanvasWidget::updateSelection(Selection& targetSelection)
+{
+  SelectionFinder selectionFinder(pointUnderMouse_);
+  foreach (const Figure& figure, figures_)
+    if (figure.isFinished())
+      figure.testSelection(selectionFinder);
+  if (targetSelection != selectionFinder.bestSelection()) {
+    targetSelection = selectionFinder.bestSelection();
+    update();
+  }
+}
 
 void CanvasWidget::finishPlotting()
 {
@@ -261,11 +288,6 @@ void CanvasWidget::finishPlotting()
     }
   }
   updateAll();
-}
-
-Figure CanvasWidget::newFigure(bool isEtalon)
-{
-  return Figure(figureType_, isEtalon, &originalMetersPerPixel_, &scale_, &originalPointUnderMouse_);
 }
 
 void CanvasWidget::resetAll()

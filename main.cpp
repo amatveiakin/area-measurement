@@ -1,4 +1,5 @@
-// TODO: Use Q_ASSERT instead of assert (?)
+// TODO: Use Q_ASSERT instead of assert and abort (?)
+// TODO: double -> qreal (?)
 
 #include <QtGui/QApplication>
 #include "mainwindow.h"

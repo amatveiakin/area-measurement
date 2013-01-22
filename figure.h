@@ -7,6 +7,8 @@
 #include "defines.h"
 
 class QPainter;
+class CanvasWidget;
+class SelectionFinder;
 
 extern const QString linearUnitSuffix;
 extern const QString squareUnitSuffix;
@@ -14,16 +16,17 @@ extern const QString squareUnitSuffix;
 class Figure
 {
 public:
-  Figure(FigureType figureType, bool isEtalon, const double* originalMetersPerPixel,
-         const double* scale, QPointF* originalPointUnderMouse);
+  Figure(FigureType figureType, bool isEtalon, const CanvasWidget* canvas);
 
-  FigureType figureType() const            { return figureType_; }
-  bool isEtalon() const                    { return isEtalon_; }
-  bool isFinished() const                  { return isFinished_; }
-  const QPolygonF& originalPolygon() const { return originalPolygon_; }
+  FigureType figureType() const     { return figureType_; }
+  bool isEtalon() const             { return isEtalon_; }
+  bool isFinished() const           { return isFinished_; }
+  QPolygonF originalPolygon() const { return originalPolygon_; }
 
   bool addPoint(QPointF originalNewPoint);
   void finish();
+
+  void testSelection(SelectionFinder& selectionFinder) const;
   void draw(QPainter& painter) const;
   QString statusString() const;
 
@@ -33,16 +36,16 @@ private:
   bool isFinished_;
   QPolygonF originalPolygon_;
   QPointF originalInscriptionPos_;  // TODO: Use it
-  const double* originalMetersPerPixel_;
-  const double* scale_;
-  QPointF* originalPointUnderMouse_;
+  const CanvasWidget* canvas_;
   double size_;   // length or area  // TODO: Use it or delete it
   QColor penColor_;
 
-  QPolygonF getActiveOriginalPolygon(PolygonCorrectness& correctness) const;
+  QPolygonF getActiveOriginalPolygon(PolygonCorrectness *correctness = 0) const;
   void scalePolygon(QPolygonF& polygon) const;
   QString getSizeString(PolygonCorrectness& correctness) const;
   QString getInscription() const;
+  bool isSelected() const;
+  bool isHovered() const;
 };
 
 #endif // FIGURE_H

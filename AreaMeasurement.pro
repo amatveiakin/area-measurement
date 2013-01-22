@@ -15,14 +15,16 @@ SOURCES += main.cpp\
     polygon_math.cpp \
     canvaswidget.cpp \
     figure.cpp \
-    paint_utils.cpp
+    paint_utils.cpp \
+    selection.cpp
 
 HEADERS  += mainwindow.h \
     polygon_math.h \
     canvaswidget.h \
     defines.h \
     figure.h \
-    paint_utils.h
+    paint_utils.h \
+    selection.h
 
 FORMS    += mainwindow.ui
 

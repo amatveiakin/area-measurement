@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cmath>
-
-#include <QLineF>
+#include <limits>
 
 #include "polygon_math.h"
 
@@ -10,6 +9,8 @@
 // Misc
 
 const double eps = 1e-6;
+const double positiveInf = std::numeric_limits<double>::max();
+const double negativeInf = std::numeric_limits<double>::min();
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +21,7 @@ double segmentLenght(QPointF a, QPointF b)
   return std::sqrt(sqr(a.x() - b.x()) + sqr(a.y() - b.y()));
 }
 
-double polylineLength(const QPolygonF& polyline)
+double polylineLength(QPolygonF polyline)
 {
   double length = 0;
   for (int i = 0; i < polyline.size() - 1; i++)
@@ -32,7 +33,7 @@ double polylineLength(const QPolygonF& polyline)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Area
 
-void assertPolygonIsClosed(const QPolygonF& polygon)
+void assertPolygonIsClosed(QPolygonF polygon)
 {
   assert(polygon.isEmpty() || polygon.first() == polygon.last());
 }
@@ -42,7 +43,7 @@ bool testSegmentsCross(QPointF a, QPointF b, QPointF c, QPointF d)
   return QLineF(a, b).intersect(QLineF(c, d), 0) == QLineF::BoundedIntersection;
 }
 
-bool isSelfintersectingPolygon(const QPolygonF& polygon)
+bool isSelfintersectingPolygon(QPolygonF polygon)
 {
   assertPolygonIsClosed(polygon);
   int n = polygon.size() - 1;  // cut off last vertex
@@ -65,7 +66,7 @@ double triangleSignedArea(QPointF a, QPointF b, QPointF c)
   return (p.x() * q.y() - p.y() * q.x()) / 2.0;
 }
 
-double polygonArea(const QPolygonF& polygon)
+double polygonArea(QPolygonF polygon)
 {
   assertPolygonIsClosed(polygon);
   double area = 0;
@@ -128,7 +129,7 @@ void finishPolygon(QPolygonF& polygon, FigureType figureType)
   abort();
 }
 
-PolygonCorrectness polygonCorrectness(const QPolygonF& polygon, FigureType figureType)
+PolygonCorrectness polygonCorrectness(QPolygonF polygon, FigureType figureType)
 {
   switch (figureType) {
     case SEGMENT:
@@ -141,4 +142,41 @@ PolygonCorrectness polygonCorrectness(const QPolygonF& polygon, FigureType figur
       return isSelfintersectingPolygon(polygon) ? SELF_INTERSECTING_POLYGON : VALID_POLYGON;
   }
   abort();
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Distance
+
+double pointToPointDistance(QPointF point1, QPointF point2)
+{
+  return QLineF(point1, point2).length();
+}
+
+double pointToSegmentDistance(QPointF point, QLineF line)
+{
+  QPointF normalVector = QPointF(line.dy(), -line.dx()) * 100.;  // The multiplier is to get an ``infinite straight line''
+  QPointF projection;
+  switch (line.intersect(QLineF(point - normalVector, point + normalVector), &projection)) {
+    case QLineF::NoIntersection:
+      abort();
+    case QLineF::BoundedIntersection:
+      return pointToPointDistance(point, projection);
+    case QLineF::UnboundedIntersection:
+      return qMin(pointToPointDistance(point, line.p1()), pointToPointDistance(point, line.p2()));
+  }
+  abort();
+}
+
+double pointToPolylineDistance(QPointF point, QPolygonF polyline)
+{
+  double distance = positiveInf;
+  for (int i = 0; i < polyline.size() - 1; i++)
+    distance = qMin(distance, pointToSegmentDistance(point, QLineF(polyline[i], polyline[i + 1])));
+  return distance;
+}
+
+double pointToPolygonDistance(QPointF point, QPolygonF polygon)
+{
+  return polygon.containsPoint(point, Qt::OddEvenFill) ? 0. : pointToPolylineDistance(point, polygon);
 }

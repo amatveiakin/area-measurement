@@ -1,10 +1,12 @@
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
 
+#include <QLinkedList>
 #include <QWidget>
 
 #include "defines.h"
 #include "figure.h"
+#include "selection.h"
 
 class MainWindow;
 class QLabel;
@@ -54,8 +56,13 @@ private:
   double metersPerPixel_;
 
   // Drawings
+  QPointF pointUnderMouse_;
   QPointF originalPointUnderMouse_;
-  QList<Figure> figures_;
+  QLinkedList<Figure> figures_;  // We want pointers not to be invalidated after insertions
+
+  // Current state
+  Selection selection_;  // TODO: use it
+  Selection hover_;  // TODO: use it
 
   // Scroll
   QPoint scrollStartPoint_;
@@ -70,14 +77,18 @@ private:
   virtual bool eventFilter(QObject* object, QEvent* event);
 
   Figure& activeFigure();
+  Figure newFigure(bool isEtalon) const;
+  void prepareToRemoveFigure(const Figure* figure);  // TODO: use it
 
   void drawRuler(QPainter& painter, const QRect& rect);
 
+  void updateSelection(Selection& targetSelection);
   void finishPlotting();
-  Figure newFigure(bool isEtalon);
   void resetAll();
   void scaleChanged();
   void updateAll();
+
+  friend class Figure;
 };
 
 #endif // CANVASWIDGET_H
