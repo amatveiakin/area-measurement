@@ -51,6 +51,7 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
   iScale_ = acceptableScales_.indexOf(1.00);
 
   scrollArea_->viewport()->installEventFilter(this);
+  setFocusPolicy(Qt::StrongFocus);
   setMouseTracking(true);
   shapeType_ = DEFAULT_TYPE;
   isDefiningEtalon_ = true;
@@ -78,6 +79,19 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
   if (showRuler_)
     drawRuler(painter, event->rect());
   event->accept();
+}
+
+void CanvasWidget::keyPressEvent(QKeyEvent* event)
+{
+  if (event->key() == Qt::Key_Delete) {
+    if (!selection_.isEmpty() && !selection_.figure->isEtalon()) {
+      removeFigure(selection_.figure);
+      updateAll();
+    }
+  }
+  else {
+    QWidget::keyPressEvent(event);
+  }
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent* event)
