@@ -24,8 +24,8 @@ public:
                QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
   ~CanvasWidget();
 
-  void setMode(FigureType newMode);
-  bool isEtalonCorrect() const;
+  void setMode(ShapeType newMode);
+  bool hasEtalon() const;
   QPixmap getModifiedImage();
 
 public slots:
@@ -42,7 +42,7 @@ private:
   QPixmap image_;
 
   // Current state
-  FigureType figureType_;
+  ShapeType shapeType_;
   bool isDefiningEtalon_;
   bool showRuler_;
 
@@ -52,6 +52,7 @@ private:
   double scale_;
 
   // Length etalon
+  double etalonMetersSize_;
   double originalMetersPerPixel_;
   double metersPerPixel_;
 
@@ -61,8 +62,10 @@ private:
   QLinkedList<Figure> figures_;  // We want pointers not to be invalidated after insertions
 
   // Current state
-  Selection selection_;  // TODO: use it
-  Selection hover_;  // TODO: use it
+  Figure* etalonFigure_;
+  Figure* activeFigure_;
+  Selection selection_;
+  Selection hover_;
 
   // Scroll
   QPoint scrollStartPoint_;
@@ -72,17 +75,20 @@ private:
 private:
   virtual void paintEvent(QPaintEvent* event);
   virtual void mousePressEvent(QMouseEvent* event);
+  virtual void mouseReleaseEvent(QMouseEvent* event);
   virtual void mouseMoveEvent(QMouseEvent* event);
   virtual void mouseDoubleClickEvent(QMouseEvent* event);
   virtual bool eventFilter(QObject* object, QEvent* event);
 
-  Figure& activeFigure();
-  Figure newFigure(bool isEtalon) const;
-  void prepareToRemoveFigure(const Figure* figure);  // TODO: use it
+  void addActiveFigure();
+  void removeFigure(const Figure* figure);
 
   void drawRuler(QPainter& painter, const QRect& rect);
 
-  void updateSelection(Selection& targetSelection);
+  void updateMousePos(QPoint mousePos);
+  void updateHover();
+  void defineEtalon(Figure* etalonFigure);
+  void clearEtalon(bool invalidateOnly = false);
   void finishPlotting();
   void resetAll();
   void scaleChanged();

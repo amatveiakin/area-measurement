@@ -1,3 +1,5 @@
+// TODO: remove the status bar (?)
+
 #include <cassert>
 
 #include <QFileDialog>
@@ -127,7 +129,7 @@ QFont MainWindow::getInscriptionFont() const
   return inscriptionFont;
 }
 
-void MainWindow::setMode(FigureType newMode)
+void MainWindow::setMode(ShapeType newMode)
 {
   if (canvasWidget)
     canvasWidget->setMode(newMode);
@@ -291,12 +293,13 @@ void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
   if (!canvasWidget)
     return;
 
-  if (canvasWidget->isEtalonCorrect()) {
+  if (canvasWidget->hasEtalon()) {
     toggleEtalonModeAction->setChecked(isDefiningEtalon);
     canvasWidget->toggleEtalonDefinition(isDefiningEtalon);
   }
-  else
+  else {
     toggleEtalonModeAction->setChecked(true);
+  }
 }
 
 void MainWindow::customizeInscriptionFont()

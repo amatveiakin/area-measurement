@@ -1,4 +1,4 @@
-#include "polygon_math.h"
+#include "figure.h"
 #include "selection.h"
 
 
@@ -10,6 +10,42 @@ const double inscriptionActivationRadius = polygonActivationRadius;
 static inline double computeScore(double distance, double activationRadius)
 {
   return qMax(0., activationRadius - distance);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Distance computation
+
+double pointToPointDistance(QPointF point1, QPointF point2)
+{
+  return QLineF(point1, point2).length();
+}
+
+double pointToSegmentDistance(QPointF point, QLineF line)
+{
+  QPointF normalVector = QPointF(line.dy(), -line.dx()) * 100.;  // The multiplier is to get an ``infinite straight line''
+  QPointF projection;
+  switch (line.intersect(QLineF(point - normalVector, point + normalVector), &projection)) {
+    case QLineF::BoundedIntersection:
+      return pointToPointDistance(point, projection);
+    case QLineF::NoIntersection:
+    case QLineF::UnboundedIntersection:
+      return qMin(pointToPointDistance(point, line.p1()), pointToPointDistance(point, line.p2()));
+  }
+  abort();
+}
+
+double pointToPolylineDistance(QPointF point, QPolygonF polyline)
+{
+  double distance = positiveInf;
+  for (int i = 0; i < polyline.size() - 1; i++)
+    distance = qMin(distance, pointToSegmentDistance(point, QLineF(polyline[i], polyline[i + 1])));
+  return distance;
+}
+
+double pointToPolygonDistance(QPointF point, QPolygonF polygon)
+{
+  return polygon.containsPoint(point, Qt::OddEvenFill) ? 0. : pointToPolylineDistance(point, polygon);
 }
 
 
@@ -29,7 +65,7 @@ void Selection::reset()
   iVertex = -1;
 }
 
-void Selection::assign(const Figure* figure__, Type type__, int iVertex__)
+void Selection::assign(Figure* figure__, Type type__, int iVertex__)
 {
   figure  = figure__;
   type    = type__;
@@ -50,16 +86,24 @@ bool Selection::operator!=(const Selection& other)
 }
 
 
-bool Selection::isDraggable() const
+//bool Selection::isDraggable() const
+//{
+//  if (isEmpty())
+//    return false;
+//  switch (type) {
+//    case FIGURE:
+//      return false;
+//    case VERTEX:
+//    case INSCRIPTION:
+//      return true;
+//  }
+//  abort();
+//}
+
+void Selection::dragTo(QPointF newPos)
 {
-  switch (type) {
-    case FIGURE:
-      return false;
-    case VERTEX:
-    case INSCRIPTION:
-      return true;
-  }
-  abort();
+  if (!isEmpty())
+    figure->dragTo(*this, newPos);
 }
 
 
@@ -73,7 +117,7 @@ SelectionFinder::SelectionFinder(QPointF cursorPos) :
 {
 }
 
-void SelectionFinder::testPolygon(QPolygonF polygon, const Figure* figure)
+void SelectionFinder::testPolygon(QPolygonF polygon, Figure* figure)
 {
   double score = computeScore(pointToPolygonDistance(cursorPos_, polygon), polygonActivationRadius);
   if (score > bestScore_) {
@@ -82,7 +126,7 @@ void SelectionFinder::testPolygon(QPolygonF polygon, const Figure* figure)
   }
 }
 
-void SelectionFinder::testPolyline(QPolygonF polyline, const Figure* figure)
+void SelectionFinder::testPolyline(QPolygonF polyline, Figure* figure)
 {
   double score = computeScore(pointToPolylineDistance(cursorPos_, polyline), polylineActivationRadius);
   if (score > bestScore_) {
@@ -91,7 +135,7 @@ void SelectionFinder::testPolyline(QPolygonF polyline, const Figure* figure)
   }
 }
 
-void SelectionFinder::testVertex(QPointF vertex, const Figure* figure, int iVertex)
+void SelectionFinder::testVertex(QPointF vertex, Figure* figure, int iVertex)
 {
   double score = computeScore(pointToPointDistance(cursorPos_, vertex), vertexActivationRadius);
   if (score > bestScore_) {
@@ -100,7 +144,7 @@ void SelectionFinder::testVertex(QPointF vertex, const Figure* figure, int iVert
   }
 }
 
-void SelectionFinder::testInscription(QRectF boundingRect, const Figure* figure)
+void SelectionFinder::testInscription(QRectF boundingRect, Figure* figure)
 {
   double score = computeScore(pointToPolygonDistance(cursorPos_, QPolygonF(boundingRect)), inscriptionActivationRadius);
   if (score > bestScore_) {

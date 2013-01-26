@@ -6,19 +6,17 @@
 #include "canvaswidget.h"
 #include "figure.h"
 #include "paint_utils.h"
-#include "polygon_math.h"
 #include "selection.h"
 
 
 const QString linearUnitSuffix = QString::fromUtf8("м");
 const QString squareUnitSuffix = linearUnitSuffix + QString::fromUtf8("²");
 
+const double selectionBallRadius = 3;
 
-const QColor etalonStaticPen_ = QColor(  0, 150,   0);
-const QColor etalonActivePen_ = QColor(  0, 200,   0);
-const QColor staticPen_       = QColor(  0,  50, 240);
-const QColor activePen_       = QColor(  0, 100, 240);
-const QColor errorPen_        = QColor(255,   0,   0);
+const QColor etalonDefaultPen_ = QColor(  0, 150,   0);
+const QColor defaultPen_       = QColor(  0,  50, 240);
+const QColor errorPen_         = QColor(255,   0,   0);
 
 static inline QColor getFillColor(QColor penColor)
 {
@@ -33,15 +31,13 @@ static inline void setColor(QPainter& painter, QColor penColor)
 }
 
 
-Figure::Figure(FigureType figureType, bool isEtalon, const CanvasWidget* canvas) :
-  figureType_(figureType),
+Figure::Figure(ShapeType shapeType, bool isEtalon, const CanvasWidget* canvas) :
+  originalShape_(shapeType),
   isEtalon_(isEtalon),
-  isFinished_(false),
-  originalPolygon_(),
   originalInscriptionPos_(),
   canvas_(canvas),
   size_(0.),
-  penColor_(isEtalon ? etalonStaticPen_ : staticPen_)
+  penColor_(isEtalon ? etalonDefaultPen_ : defaultPen_)
   //penColor_(QColor::fromHsv(rand() % 360, 255, 127))
 {
 }
@@ -49,37 +45,51 @@ Figure::Figure(FigureType figureType, bool isEtalon, const CanvasWidget* canvas)
 
 bool Figure::addPoint(QPointF originalNewPoint)
 {
-  return addPointToPolygon(originalPolygon_, originalNewPoint, figureType_);
+  return originalShape_.addPoint(originalNewPoint);
 }
 
 void Figure::finish()
 {
-  finishPolygon(originalPolygon_, figureType_);
-  isFinished_ = true;
+  originalShape_.finish();
 }
 
 
-void Figure::testSelection(SelectionFinder& selectionFinder) const
+void Figure::testSelection(SelectionFinder& selectionFinder)
 {
-  QPolygonF activePolygon = getActiveOriginalPolygon();
-  scalePolygon(activePolygon);
+  Shape activeShape = getActiveOriginalShape();
+  activeShape.scale(canvas_->scale_);
 
-  switch (getDimensionality(figureType_)) {
-    case FIGURE_1D: selectionFinder.testPolyline(activePolygon, this); break;
-    case FIGURE_2D: selectionFinder.testPolygon (activePolygon, this); break;
+  switch (originalShape_.dimensionality()) {
+    case SHAPE_1D: selectionFinder.testPolyline(activeShape.polygon(), this); break;
+    case SHAPE_2D: selectionFinder.testPolygon (activeShape.polygon(), this); break;
   }
 
-  for (int i = 0; i < activePolygon.size(); ++i)
-    selectionFinder.testVertex(activePolygon[i], this, i);
+  QPolygonF vertices = activeShape.vertices();
+  for (int i = 0; i < vertices.size(); ++i)
+    selectionFinder.testVertex(vertices[i], this, i);
 
 //  selectionFinder.testInscription();  // TODO
 }
 
+void Figure::dragTo(const Selection& selection, QPointF newPos)
+{
+  switch (selection.type) {
+    case Selection::FIGURE:
+      break;
+    case Selection::VERTEX:
+      originalShape_.dragVertex(selection.iVertex, newPos);
+      break;
+    case Selection::INSCRIPTION:
+      // TODO: Make inscription draggable
+      break;
+  }
+}
+
 void Figure::draw(QPainter& painter) const
 {
-  PolygonCorrectness correctness;
-  QPolygonF activePolygon = getActiveOriginalPolygon(&correctness);
-  scalePolygon(activePolygon);
+  Shape activeShape = getActiveOriginalShape();
+  activeShape.scale(canvas_->scale_);
+  QPolygonF activePolygon = activeShape.polygon();
 
   TextDrawer inscriptionTextDrawer;
   QString inscription = getInscription();
@@ -93,42 +103,56 @@ void Figure::draw(QPainter& painter) const
     inscriptionTextDrawer = drawTextWithBackground(painter, inscription, inscriptionPos);
   }
 
-  if (correctness != VALID_POLYGON) {
+  if (activeShape.correctness() != VALID_SHAPE) {
     setColor(painter, errorPen_);
   }
-  else if (isFinished_) {
+  else {
     if (isHovered())
-      setColor(painter, penColor_.lighter());
+      setColor(painter, penColor_.lighter(130));
     else
       setColor(painter, penColor_);
   }
-  else {
-    if (isEtalon_)
-      setColor(painter, etalonActivePen_);
-    else
-      setColor(painter, activePen_);
-  }
 
   snapPolygonToPixelGrid(activePolygon);
-  switch (getDimensionality(figureType_)) {
-    case FIGURE_1D: painter.drawPolyline(activePolygon); break;
-    case FIGURE_2D: painter.drawPolygon (activePolygon); break;
+  switch (originalShape_.dimensionality()) {
+    case SHAPE_1D: painter.drawPolyline(activePolygon); break;
+    case SHAPE_2D: painter.drawPolygon (activePolygon); break;
+  }
+
+  if (activePolygon.isClosed())
+    activePolygon.pop_back();
+  if (isSelected() || isHovered()) {
+    QColor brushColor(255, 255, 255);
+    QColor hoveredBrushColor(255, 255, 80);
+    QColor penColor(0, 0, 0);
+    if (!isSelected()) {
+      brushColor.setAlpha(100);
+      hoveredBrushColor.setAlpha(100);
+      penColor.setAlpha(100);
+    }
+    painter.setBrush(brushColor);
+    painter.setPen(penColor);
+
+    for (int i = 0; i < activePolygon.size(); ++i) {
+      painter.setBrush(i == hoveredVertex() ? hoveredBrushColor : brushColor);
+      painter.drawEllipse(activePolygon[i], selectionBallRadius, selectionBallRadius);
+    }
   }
 }
 
 QString Figure::statusString() const
 {
-  PolygonCorrectness correctness;
+  ShapeCorrectness correctness;
   QString sizeString = getSizeString(correctness);
 
   switch (correctness) {
-    case VALID_POLYGON: {
+    case VALID_SHAPE: {
       if (sizeString.isEmpty())
         return QString();
       QString etalonString = isEtalon_ ? QString::fromUtf8(" эталона") : QString();
-      switch (getDimensionality(figureType_)) {
-        case FIGURE_1D: return QString::fromUtf8("Длина%1: %2"  ).arg(etalonString).arg(sizeString);
-        case FIGURE_2D: return QString::fromUtf8("Площадь%1: %2").arg(etalonString).arg(sizeString);
+      switch (originalShape_.dimensionality()) {
+        case SHAPE_1D: return QString::fromUtf8("Длина%1: %2"  ).arg(etalonString).arg(sizeString);
+        case SHAPE_2D: return QString::fromUtf8("Площадь%1: %2").arg(etalonString).arg(sizeString);
       }
       break;
     }
@@ -140,22 +164,12 @@ QString Figure::statusString() const
 }
 
 
-QPolygonF Figure::getActiveOriginalPolygon(PolygonCorrectness* correctness) const
+Shape Figure::getActiveOriginalShape() const
 {
-  QPolygonF activeOriginalPolygon = originalPolygon_;
-  if (!isFinished_) {
-    addPointToPolygon(activeOriginalPolygon, canvas_->originalPointUnderMouse_, figureType_);
-    finishPolygon(activeOriginalPolygon, figureType_);
-  }
-  if (correctness)
-    *correctness = polygonCorrectness(activeOriginalPolygon, figureType_);
-  return activeOriginalPolygon;
-}
-
-void Figure::scalePolygon(QPolygonF& polygon) const
-{
-  for (QPolygonF::Iterator it = polygon.begin(); it != polygon.end(); ++it)
-    *it *= canvas_->scale_;
+  Shape activeOriginalShape = originalShape_;
+  if (!activeOriginalShape.isFinished())
+    activeOriginalShape.addPoint(canvas_->originalPointUnderMouse_);
+  return activeOriginalShape;
 }
 
 // QPainter with antialiasing gives clearer results for horisontal and vertical lines after this function
@@ -165,23 +179,22 @@ void Figure::snapPolygonToPixelGrid(QPolygonF& polygon) const
     polygon[i] = QPointF(floor(polygon[i].x()) + 0.5, floor(polygon[i].y()) + 0.5);
 }
 
-QString Figure::getSizeString(PolygonCorrectness& correctness) const
+QString Figure::getSizeString(ShapeCorrectness& correctness) const
 {
-  QPolygonF activePolygon = getActiveOriginalPolygon(&correctness);
+  Shape activeShape = getActiveOriginalShape();
+  correctness = activeShape.correctness();
+  if (!canvas_->hasEtalon())
+    return QString();
   switch (correctness) {
-    case VALID_POLYGON:
-      switch (getDimensionality(figureType_)) {
-        case FIGURE_1D: {
-          double length = polylineLength(activePolygon) * canvas_->originalMetersPerPixel_;
-          if (length > eps)
-            return QString("%1 %2").arg(length).arg(linearUnitSuffix);
-          break;
+    case VALID_SHAPE:
+      switch (activeShape.dimensionality()) {
+        case SHAPE_1D: {
+          double length = activeShape.length() * canvas_->originalMetersPerPixel_;
+          return QString("%1 %2").arg(length).arg(linearUnitSuffix);
         }
-        case FIGURE_2D: {
-          double area = polygonArea(activePolygon) * sqr(canvas_->originalMetersPerPixel_);
-          if (area > eps)
-            return QString("%1 %2").arg(area).arg(squareUnitSuffix);
-          break;
+        case SHAPE_2D: {
+          double area = activeShape.area() * sqr(canvas_->originalMetersPerPixel_);
+          return QString("%1 %2").arg(area).arg(squareUnitSuffix);
         }
       }
       break;
@@ -193,9 +206,9 @@ QString Figure::getSizeString(PolygonCorrectness& correctness) const
 
 QString Figure::getInscription() const
 {
-  PolygonCorrectness correctness;
+  ShapeCorrectness correctness;
   QString sizeString = getSizeString(correctness);
-  if (correctness == VALID_POLYGON && !sizeString.isEmpty())
+  if (correctness == VALID_SHAPE && !sizeString.isEmpty())
     return sizeString + (isEtalon_ ? QString::fromUtf8(" [эталон]") : QString());
   else
     return QString();
@@ -209,4 +222,9 @@ bool Figure::isSelected() const
 bool Figure::isHovered() const
 {
   return canvas_->hover_.figure == this;
+}
+
+int Figure::hoveredVertex() const
+{
+  return canvas_->hover_.iVertex;
 }

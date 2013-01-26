@@ -1,8 +1,10 @@
 // TODO: make cursor the fixed point of the zoom
 // TODO: compute area for selfintersecting polygons
-// TODO: polygon editing: move points, move segments, add points, delete points, move caption, change color
+// TODO: polygon editing: move caption, change color, move segments (?), add points (?), delete points (?)
 // TODO: set scale by two points GPS coordinates
 // TODO: result printing
+// TODO: make it possible to reset selection; perhaps, it's time to use 3 modes instead of 2: normal draw, draw etalon, edit?
+// TODO: won't it be easier to use weak pointers (e.g., QPointers) to figures?
 
 #include <cassert>
 #include <cmath>
@@ -17,7 +19,7 @@
 #include "canvaswidget.h"
 #include "mainwindow.h"
 #include "paint_utils.h"
-#include "polygon_math.h"
+#include "shape.h"
 
 
 const int rulerMargin         = 16;
@@ -50,12 +52,12 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
 
   scrollArea_->viewport()->installEventFilter(this);
   setMouseTracking(true);
-  figureType_ = DEFAULT_TYPE;
+  shapeType_ = DEFAULT_TYPE;
   isDefiningEtalon_ = true;
   showRuler_ = false;
-  originalMetersPerPixel_ = 0.;
-  metersPerPixel_ = 0.;
-  figures_.append(newFigure(true));
+  etalonFigure_ = 0;
+  activeFigure_ = 0;
+  clearEtalon();
   scaleChanged();
 }
 
@@ -71,22 +73,35 @@ void CanvasWidget::paintEvent(QPaintEvent* event)
   painter.setFont(mainWindow_->getInscriptionFont());
   painter.setRenderHint(QPainter::Antialiasing, true);
   painter.drawPixmap(event->rect().topLeft(), image_, event->rect());
-
   foreach (const Figure& figure, figures_)
     figure.draw(painter);
-
   if (showRuler_)
     drawRuler(painter, event->rect());
+  event->accept();
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent* event)
 {
+  updateMousePos(event->pos());
   if (event->buttons() == Qt::LeftButton) {
-    bool polygonFinished = activeFigure().addPoint(originalPointUnderMouse_);
-    if (polygonFinished)
-      finishPlotting();
-    else
-      updateAll();
+    selection_ = hover_;
+    if (hover_.isEmpty()) {
+      if (!activeFigure_) {
+        if (isDefiningEtalon_) {
+          clearEtalon();
+          removeFigure(etalonFigure_);
+        }
+        addActiveFigure();
+      }
+      bool polygonFinished = activeFigure_->addPoint(originalPointUnderMouse_);
+      if (polygonFinished)
+        finishPlotting();
+      else
+        updateAll();
+    }
+    else {
+      update();
+    }
   }
   else if (event->buttons() == Qt::RightButton) {
     scrollStartPoint_ = event->globalPos();
@@ -96,12 +111,22 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
   event->accept();
 }
 
+void CanvasWidget::mouseReleaseEvent(QMouseEvent* /*event*/)
+{
+  updateHover();
+}
+
 void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
 {
   if (event->buttons() == Qt::NoButton) {
-    pointUnderMouse_ = event->pos();
-    originalPointUnderMouse_ = pointUnderMouse_ / scale_;
-    updateSelection(hover_);
+    updateMousePos(event->pos());
+    updateAll();
+  }
+  else if (event->buttons() == Qt::LeftButton) {
+    updateMousePos(event->pos());
+    selection_.dragTo(originalPointUnderMouse_);
+    if (!selection_.isEmpty() && selection_.figure->isEtalon())
+      defineEtalon(selection_.figure);
     updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
@@ -135,13 +160,13 @@ bool CanvasWidget::eventFilter(QObject* object, QEvent* event__)
 
 
 
-void CanvasWidget::setMode(FigureType newMode)
+void CanvasWidget::setMode(ShapeType newMode)
 {
-  figureType_ = newMode;
+  shapeType_ = newMode;
   resetAll();
 }
 
-bool CanvasWidget::isEtalonCorrect() const
+bool CanvasWidget::hasEtalon() const
 {
   return originalMetersPerPixel_ > 0.;
 }
@@ -176,37 +201,43 @@ void CanvasWidget::toggleRuler(bool showRuler)
 }
 
 
-Figure& CanvasWidget::activeFigure()
+void CanvasWidget::addActiveFigure()
 {
-  assert(!figures_.isEmpty());
-  if (isDefiningEtalon_) {
-    assert(figures_.first().isEtalon());
-    return figures_.first();
-  }
-  else {
-    assert(!figures_.last().isEtalon());
-    return figures_.last();
-  }
+  assert(!activeFigure_);
+  figures_.append(Figure(shapeType_, isDefiningEtalon_, this));
+  activeFigure_ = &figures_.last();
 }
 
-Figure CanvasWidget::newFigure(bool isEtalon) const
+void CanvasWidget::removeFigure(const Figure* figure)
 {
-  return Figure(figureType_, isEtalon, this);
-}
+  if (!figure)
+    return;
 
-void CanvasWidget::prepareToRemoveFigure(const Figure *figure)
-{
+  if (etalonFigure_ == figure)
+    etalonFigure_ = 0;
+  if (activeFigure_ == figure)
+    activeFigure_ = 0;
   if (selection_.figure == figure)
     selection_.reset();
   if (hover_.figure == figure)
     hover_.reset();
+
+  bool erased = false;
+  for (auto it = figures_.begin(); it != figures_.end(); ++it) {
+    if (&(*it) == figure) {
+      figures_.erase(it);
+      erased = true;
+      break;
+    }
+  }
+  assert(erased);
 }
 
 
 void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 {
   int maxLength = qMin(rulerMaxLength, rect.width() - 2 * rulerMargin);
-  if (!isEtalonCorrect() || maxLength < rulerMinLength)
+  if (!hasEtalon() || maxLength < rulerMinLength)
     return;
 
   double pixelLengthF;
@@ -238,61 +269,95 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 }
 
 
-void CanvasWidget::updateSelection(Selection& targetSelection)
+void CanvasWidget::updateMousePos(QPoint mousePos)
 {
-  SelectionFinder selectionFinder(pointUnderMouse_);
-  foreach (const Figure& figure, figures_)
-    if (figure.isFinished())
-      figure.testSelection(selectionFinder);
-  if (targetSelection != selectionFinder.bestSelection()) {
-    targetSelection = selectionFinder.bestSelection();
+  pointUnderMouse_ = mousePos;
+  originalPointUnderMouse_ = pointUnderMouse_ / scale_;
+}
+
+void CanvasWidget::updateHover()
+{
+  Selection newHover;
+  if (activeFigure_) {
+    newHover.reset();
+  }
+  else {
+    SelectionFinder selectionFinder(pointUnderMouse_);
+    for (auto it = figures_.begin(); it != figures_.end(); ++it)
+      if (it->isFinished())
+        it->testSelection(selectionFinder);
+    newHover = selectionFinder.bestSelection();
+  }
+  if (hover_ != newHover) {
+    hover_ = newHover;
     update();
   }
 }
 
-void CanvasWidget::finishPlotting()
+void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
 {
-  activeFigure().finish();
-  QPolygonF originalPolygonDrawn = activeFigure().originalPolygon();
-  figures_.append(newFigure(false));
-
-  if (isDefiningEtalon_) {
-    double originalEtalonPixelLength = 0.;
-    QString prompt;
-    switch (getDimensionality(figureType_)) {
-      case FIGURE_1D:
-        originalEtalonPixelLength = polylineLength(originalPolygonDrawn);
-        prompt = QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnitSuffix);
-        break;
-      case FIGURE_2D:
-        originalEtalonPixelLength = std::sqrt(polygonArea(originalPolygonDrawn));
-        prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnitSuffix);
-        break;
+  assert(newEtalonFigure && newEtalonFigure->isFinished());
+  bool isResizing = (etalonFigure_ == newEtalonFigure);
+  const Shape originalShapeDrawn = newEtalonFigure->originalShape();
+  double originalEtalonPixelLength = 0.;
+  QString prompt;
+  switch (originalShapeDrawn.dimensionality()) {
+    case SHAPE_1D:
+      originalEtalonPixelLength = originalShapeDrawn.length();
+      prompt = QString::fromUtf8("Укажите длину эталона (%1): ").arg(linearUnitSuffix);
+      break;
+    case SHAPE_2D:
+      originalEtalonPixelLength = std::sqrt(originalShapeDrawn.area());
+      prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnitSuffix);
+      break;
+  }
+  bool ok = true;
+  if (!isResizing)
+    etalonMetersSize_ = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
+  if (ok && originalEtalonPixelLength > eps) {
+    double etalonMetersLength;
+    switch (originalShapeDrawn.dimensionality()) {
+      case SHAPE_1D: etalonMetersLength = etalonMetersSize_;            break;
+      case SHAPE_2D: etalonMetersLength = std::sqrt(etalonMetersSize_); break;
     }
-    bool ok;
-    double etalonMetersSize = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
-    if (ok && originalEtalonPixelLength > eps) {
-      double etalonMetersLength;
-      switch (getDimensionality(figureType_)) {
-        case FIGURE_1D: etalonMetersLength = etalonMetersSize;            break;
-        case FIGURE_2D: etalonMetersLength = std::sqrt(etalonMetersSize); break;
-      }
-      originalMetersPerPixel_ = etalonMetersLength / originalEtalonPixelLength;
-      metersPerPixel_ = originalMetersPerPixel_ / scale_;
+    originalMetersPerPixel_ = etalonMetersLength / originalEtalonPixelLength;
+    metersPerPixel_ = originalMetersPerPixel_ / scale_;
+    if (!isResizing) {
+      etalonFigure_ = newEtalonFigure;
       mainWindow_->toggleEtalonDefinition(false);
     }
-    else {
-      originalMetersPerPixel_ = 0.;
-      metersPerPixel_ = 0.;
-      figures_.removeLast();
+  }
+  else {
+    clearEtalon(true);
+    if (!isResizing) {
+      removeFigure(etalonFigure_);
+      removeFigure(newEtalonFigure);
     }
   }
+}
+
+void CanvasWidget::clearEtalon(bool invalidateOnly)
+{
+  if (!invalidateOnly)
+    etalonMetersSize_ = 0;
+  originalMetersPerPixel_ = 0.;
+  metersPerPixel_ = 0.;
+}
+
+void CanvasWidget::finishPlotting()
+{
+  assert(activeFigure_);
+  activeFigure_->finish();
+  Figure *oldActiveFigure = activeFigure_;
+  activeFigure_ = 0;
+  if (isDefiningEtalon_)
+    defineEtalon(oldActiveFigure);
   updateAll();
 }
 
 void CanvasWidget::resetAll()
 {
-  activeFigure() = newFigure(isDefiningEtalon_);
+  removeFigure(activeFigure_);
   updateAll();
 }
 
@@ -308,6 +373,7 @@ void CanvasWidget::scaleChanged()
 
 void CanvasWidget::updateAll()
 {
-  statusLabel_->setText(activeFigure().statusString());
+  updateHover();
+  statusLabel_->setText(activeFigure_ ? activeFigure_->statusString() : QString());
   update();
 }

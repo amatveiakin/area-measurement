@@ -1,7 +1,20 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-enum FigureType
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Misc
+
+extern const double eps;
+extern const double positiveInf;
+extern const double negativeInf;
+
+static inline double sqr(double x) { return x * x; }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shapes
+
+enum ShapeType
 {
   SEGMENT,
   POLYLINE,
@@ -14,29 +27,16 @@ enum FigureType
 
 enum Dimensionality
 {
-  FIGURE_1D,
-  FIGURE_2D
+  SHAPE_1D,
+  SHAPE_2D
 };
 
-static inline Dimensionality getDimensionality(FigureType figureType)
+enum ShapeCorrectness
 {
-  switch (figureType) {
-    case SEGMENT:
-    case POLYLINE:
-    case CLOSED_POLYLINE:
-      return FIGURE_1D;
-    case POLYGON:
-    case RECTANGLE:
-      return FIGURE_2D;
-  }
-  abort();
-}
-
-
-enum PolygonCorrectness
-{
-  VALID_POLYGON,
+  VALID_SHAPE,
   SELF_INTERSECTING_POLYGON
 };
+
+Dimensionality getDimensionality(ShapeType shapeType);
 
 #endif // DEFINES_H

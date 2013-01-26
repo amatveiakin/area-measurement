@@ -9,22 +9,25 @@ QT       += core gui
 TARGET = AreaMeasurement
 TEMPLATE = app
 
+QMAKE_CXXFLAGS += -std=c++0x
+
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    polygon_math.cpp \
     canvaswidget.cpp \
+    defines.cpp \
     figure.cpp \
     paint_utils.cpp \
-    selection.cpp
+    selection.cpp \
+    shape.cpp
 
 HEADERS  += mainwindow.h \
-    polygon_math.h \
     canvaswidget.h \
     defines.h \
     figure.h \
     paint_utils.h \
-    selection.h
+    selection.h \
+    shape.h
 
 FORMS    += mainwindow.ui
 
