@@ -19,6 +19,7 @@ public:
   Dimensionality dimensionality() const { return getDimensionality(type_); }
   bool isEmpty() const                  { return vertices_.isEmpty(); }
   bool isFinished() const               { return isFinished_; }
+  bool isValid() const                  { return correctness() == VALID_SHAPE; }
   QPolygonF vertices() const;
   QPolygonF polygon() const;
   ShapeCorrectness correctness() const;

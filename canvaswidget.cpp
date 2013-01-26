@@ -312,6 +312,7 @@ void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
 {
   assert(newEtalonFigure && newEtalonFigure->isFinished());
   bool isResizing = (etalonFigure_ == newEtalonFigure);
+  etalonFigure_ = newEtalonFigure;
   const Shape originalShapeDrawn = newEtalonFigure->originalShape();
   double originalEtalonPixelLength = 0.;
   QString prompt;
@@ -325,10 +326,10 @@ void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
       prompt = QString::fromUtf8("Укажите площадь эталона (%1): ").arg(squareUnitSuffix);
       break;
   }
-  bool ok = true;
+  bool userInputIsOk = true;
   if (!isResizing)
-    etalonMetersSize_ = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &ok);
-  if (ok && originalEtalonPixelLength > eps) {
+    etalonMetersSize_ = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &userInputIsOk);
+  if (originalShapeDrawn.isValid() && originalEtalonPixelLength > 0. && userInputIsOk) {
     double etalonMetersLength;
     switch (originalShapeDrawn.dimensionality()) {
       case SHAPE_1D: etalonMetersLength = etalonMetersSize_;            break;
@@ -336,18 +337,12 @@ void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
     }
     originalMetersPerPixel_ = etalonMetersLength / originalEtalonPixelLength;
     metersPerPixel_ = originalMetersPerPixel_ / scale_;
-    if (!isResizing) {
-      etalonFigure_ = newEtalonFigure;
-      mainWindow_->toggleEtalonDefinition(false);
-    }
   }
   else {
     clearEtalon(true);
-    if (!isResizing) {
-      removeFigure(etalonFigure_);
-      removeFigure(newEtalonFigure);
-    }
   }
+  if (!isResizing)
+    mainWindow_->toggleEtalonDefinition(false);
 }
 
 void CanvasWidget::clearEtalon(bool invalidateOnly)

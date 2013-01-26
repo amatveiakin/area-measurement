@@ -290,16 +290,9 @@ void MainWindow::updateMode(QAction* modeAction)
 
 void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
 {
-  if (!canvasWidget)
-    return;
-
-  if (canvasWidget->hasEtalon()) {
-    toggleEtalonModeAction->setChecked(isDefiningEtalon);
-    canvasWidget->toggleEtalonDefinition(isDefiningEtalon);
-  }
-  else {
-    toggleEtalonModeAction->setChecked(true);
-  }
+  assert(canvasWidget);
+  canvasWidget->toggleEtalonDefinition(isDefiningEtalon);
+  toggleEtalonModeAction->setChecked(isDefiningEtalon);
 }
 
 void MainWindow::customizeInscriptionFont()
