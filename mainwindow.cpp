@@ -158,10 +158,9 @@ QString MainWindow::getImageFormatsFilter() const
 
 void MainWindow::doOpenFile(const QString& filename)
 {
-  QPixmap* image = new QPixmap;
-  if (!image->load(filename)) {
+  QPixmap image;
+  if (!image.load(filename)) {
     QMessageBox::warning(this, appName(), QString::fromUtf8("Не могу открыть изображение «%1».").arg(filename));
-    delete image;
     return;
   }
 

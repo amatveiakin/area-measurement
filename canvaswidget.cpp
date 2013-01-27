@@ -36,7 +36,7 @@ const QColor rulerFrameColor  = Qt::white;
 const int maxImageSize = 4096;
 
 
-CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea,
+CanvasWidget::CanvasWidget(const QPixmap& image, MainWindow* mainWindow, QScrollArea* scrollArea,
                            QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent) :
   QWidget(parent),
   mainWindow_(mainWindow),
@@ -65,7 +65,6 @@ CanvasWidget::CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScroll
 
 CanvasWidget::~CanvasWidget()
 {
-  delete originalImage_;
 }
 
 
@@ -162,7 +161,7 @@ bool CanvasWidget::eventFilter(QObject* object, QEvent* event__)
     QWheelEvent* event = static_cast<QWheelEvent*>(event__);
     int numSteps = event->delta() / 120;
     iScale_ = qBound(0, iScale_ + numSteps, acceptableScales_.size() - 1);
-    int size = qMax(originalImage_->width(), originalImage_->height());
+    int size = qMax(originalImage_.width(), originalImage_.height());
     while (size * acceptableScales_[iScale_] > maxImageSize && acceptableScales_[iScale_] > 1.)
       iScale_--;
     scaleChanged();
@@ -385,7 +384,7 @@ void CanvasWidget::resetAll()
 void CanvasWidget::scaleChanged()
 {
   scale_ = acceptableScales_[iScale_];
-  image_ = originalImage_->scaled(originalImage_->size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+  image_ = originalImage_.scaled(originalImage_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation);
   metersPerPixel_ = originalMetersPerPixel_ / scale_;
   setFixedSize(image_.size());
   scaleLabel_->setText(QString::number(scale_ * 100.) + "%");

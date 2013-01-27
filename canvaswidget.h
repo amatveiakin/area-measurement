@@ -20,7 +20,7 @@ class CanvasWidget : public QWidget
   Q_OBJECT
 
 public:
-  CanvasWidget(const QPixmap* image, MainWindow* mainWindow, QScrollArea* scrollArea,
+  CanvasWidget(const QPixmap& image, MainWindow* mainWindow, QScrollArea* scrollArea,
                QLabel* scaleLabel, QLabel* statusLabel, QWidget* parent = 0);
   ~CanvasWidget();
 
@@ -38,7 +38,7 @@ private:
   QScrollArea* scrollArea_;
   QLabel* scaleLabel_;
   QLabel* statusLabel_;
-  const QPixmap* originalImage_;  // Owner
+  QPixmap originalImage_;
   QPixmap image_;
 
   // Current state
