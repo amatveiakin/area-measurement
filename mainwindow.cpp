@@ -164,6 +164,7 @@ void MainWindow::doOpenFile(const QString& filename)
     return;
   }
 
+  openedFile = filename;
   recentFiles.removeAll(filename);
   recentFiles.prepend(filename);
   if (recentFiles.size() > maxRecentDocuments)
@@ -258,7 +259,7 @@ void MainWindow::openRecentFile()
 void MainWindow::saveFile()
 {
   QString filename = QFileDialog::getSaveFileName(this, QString::fromUtf8("Сохранить изображение — ") + appName(),
-                                                  QString(), getImageFormatsFilter(), 0);
+                                                  openedFile, getImageFormatsFilter(), 0);
   if (!filename.isEmpty())
     doSaveFile(filename);
 }

@@ -30,6 +30,7 @@ public slots:
   void toggleEtalonDefinition(bool isDefiningEtalon);
 
 private:
+  QString openedFile;
   QStringList recentFiles;
   QFont inscriptionFont;
 
