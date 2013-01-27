@@ -22,7 +22,9 @@ struct Selection
   Selection();
 
   void reset();
-  void assign(Figure* figure__, Type type__, int iVertex__);
+  void setFigure(Figure* figure__);
+  void setVertex(Figure* figure__, int iVertex__);
+  void setInscription(Figure* figure__);
 
   bool operator==(const Selection& other);
   bool operator!=(const Selection& other);
@@ -30,6 +32,9 @@ struct Selection
   bool isEmpty()  { return !figure; }
 //  bool isDraggable() const;
   void dragTo(QPointF newPos);
+
+private:
+  void assign(Figure* figure__, Type type__, int iVertex__ = -1);
 };
 
 class SelectionFinder

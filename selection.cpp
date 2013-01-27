@@ -60,16 +60,22 @@ Selection::Selection()
 
 void Selection::reset()
 {
-  figure  = 0;
-  type    = FIGURE;
-  iVertex = -1;
+  assign(0, FIGURE);
 }
 
-void Selection::assign(Figure* figure__, Type type__, int iVertex__)
+void Selection::setFigure(Figure* figure__)
 {
-  figure  = figure__;
-  type    = type__;
-  iVertex = iVertex__;
+  assign(figure__, FIGURE);
+}
+
+void Selection::setVertex(Figure* figure__, int iVertex__)
+{
+  assign(figure__, VERTEX, iVertex__);
+}
+
+void Selection::setInscription(Figure* figure__)
+{
+  assign(figure__, INSCRIPTION);
 }
 
 
@@ -107,6 +113,14 @@ void Selection::dragTo(QPointF newPos)
 }
 
 
+void Selection::assign(Figure* figure__, Type type__, int iVertex__)
+{
+  figure  = figure__;
+  type    = type__;
+  iVertex = iVertex__;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SelectionFinder
 
@@ -121,7 +135,7 @@ void SelectionFinder::testPolygon(QPolygonF polygon, Figure* figure)
 {
   double score = computeScore(pointToPolygonDistance(cursorPos_, polygon), polygonActivationRadius);
   if (score > bestScore_) {
-    bestSelection_.assign(figure, Selection::FIGURE, -1);
+    bestSelection_.setFigure(figure);
     bestScore_ = score;
   }
 }
@@ -130,7 +144,7 @@ void SelectionFinder::testPolyline(QPolygonF polyline, Figure* figure)
 {
   double score = computeScore(pointToPolylineDistance(cursorPos_, polyline), polylineActivationRadius);
   if (score > bestScore_) {
-    bestSelection_.assign(figure, Selection::FIGURE, -1);
+    bestSelection_.setFigure(figure);
     bestScore_ = score;
   }
 }
@@ -139,7 +153,7 @@ void SelectionFinder::testVertex(QPointF vertex, Figure* figure, int iVertex)
 {
   double score = computeScore(pointToPointDistance(cursorPos_, vertex), vertexActivationRadius);
   if (score > bestScore_) {
-    bestSelection_.assign(figure, Selection::VERTEX, iVertex);
+    bestSelection_.setVertex(figure, iVertex);
     bestScore_ = score;
   }
 }
@@ -148,7 +162,7 @@ void SelectionFinder::testInscription(QRectF boundingRect, Figure* figure)
 {
   double score = computeScore(pointToPolygonDistance(cursorPos_, QPolygonF(boundingRect)), inscriptionActivationRadius);
   if (score > bestScore_) {
-    bestSelection_.assign(figure, Selection::INSCRIPTION, -1);
+    bestSelection_.setInscription(figure);
     bestScore_ = score;
   }
 }

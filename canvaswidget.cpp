@@ -5,6 +5,7 @@
 // TODO: result printing
 // TODO: make it possible to reset selection; perhaps, it's time to use 3 modes instead of 2: normal draw, draw etalon, edit?
 // TODO: won't it be easier to use weak pointers (e.g., QPointers) to figures?
+// TODO: reduce number of digits after the decimal point
 
 #include <cassert>
 #include <cmath>
@@ -110,12 +111,8 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
       bool polygonFinished = activeFigure_->addPoint(originalPointUnderMouse_);
       if (polygonFinished)
         finishPlotting();
-      else
-        updateAll();
     }
-    else {
-      update();
-    }
+    updateAll();
   }
   else if (event->buttons() == Qt::RightButton) {
     scrollStartPoint_ = event->globalPos();
@@ -310,6 +307,16 @@ void CanvasWidget::updateHover()
   }
 }
 
+void CanvasWidget::updateStatus()
+{
+  QString statusString;
+  if (activeFigure_)
+    statusString = activeFigure_->statusString();
+  else if (!selection_.isEmpty())
+    statusString = selection_.figure->statusString();
+  statusLabel_->setText(statusString);
+}
+
 void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
 {
   assert(newEtalonFigure && newEtalonFigure->isFinished());
@@ -363,6 +370,7 @@ void CanvasWidget::finishPlotting()
   activeFigure_ = 0;
   if (isDefiningEtalon_)
     defineEtalon(oldActiveFigure);
+  selection_.setFigure(oldActiveFigure);
   updateAll();
 }
 
@@ -385,6 +393,6 @@ void CanvasWidget::scaleChanged()
 void CanvasWidget::updateAll()
 {
   updateHover();
-  statusLabel_->setText(activeFigure_ ? activeFigure_->statusString() : QString());
+  updateStatus();
   update();
 }

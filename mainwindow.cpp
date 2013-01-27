@@ -1,5 +1,3 @@
-// TODO: remove the status bar (?)
-
 #include <cassert>
 
 #include <QFileDialog>

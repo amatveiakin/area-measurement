@@ -88,6 +88,7 @@ private:
 
   void updateMousePos(QPoint mousePos);
   void updateHover();
+  void updateStatus();
   void defineEtalon(Figure* etalonFigure);
   void clearEtalon(bool invalidateOnly = false);
   void finishPlotting();
