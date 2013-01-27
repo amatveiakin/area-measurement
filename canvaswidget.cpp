@@ -151,9 +151,11 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
   event->accept();
 }
 
+// TODO: deal with case when double-click is the first click
 void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
-  finishPlotting();
+  if (event->buttons() == Qt::LeftButton)
+    finishPlotting();
   event->accept();
 }
 
