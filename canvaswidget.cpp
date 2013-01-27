@@ -284,6 +284,8 @@ void CanvasWidget::drawRuler(QPainter& painter, const QRect& rect)
 
 void CanvasWidget::updateMousePos(QPoint mousePos)
 {
+  mousePos.setX(qBound(0, mousePos.x(), image_.width()));
+  mousePos.setY(qBound(0, mousePos.y(), image_.height()));
   pointUnderMouse_ = mousePos;
   originalPointUnderMouse_ = pointUnderMouse_ / scale_;
 }
