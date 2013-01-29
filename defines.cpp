@@ -1,4 +1,3 @@
-#include <cstdlib>
 #include <limits>
 
 #include "defines.h"
@@ -26,5 +25,5 @@ Dimensionality getDimensionality(ShapeType shapeType)
     case RECTANGLE:
       return SHAPE_2D;
   }
-  abort();
+  ERROR_RETURN_V(SHAPE_1D);
 }

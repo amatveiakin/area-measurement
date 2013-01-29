@@ -32,7 +32,7 @@ double pointToSegmentDistance(QPointF point, QLineF line)
     case QLineF::UnboundedIntersection:
       return qMin(pointToPointDistance(point, line.p1()), pointToPointDistance(point, line.p2()));
   }
-  abort();
+  ERROR_RETURN_V(0.);
 }
 
 double pointToPolylineDistance(QPointF point, QPolygonF polyline)
@@ -54,11 +54,11 @@ double pointToPolygonDistance(QPointF point, QPolygonF polygon)
 
 Selection::Selection()
 {
-  reset();
+  clear();
 }
 
 
-void Selection::reset()
+void Selection::clear()
 {
   assign(0, FIGURE);
 }
@@ -103,7 +103,7 @@ bool Selection::operator!=(const Selection& other)
 //    case INSCRIPTION:
 //      return true;
 //  }
-//  abort();
+//  ERROR_RETURN(false);
 //}
 
 void Selection::dragTo(QPointF newPos)

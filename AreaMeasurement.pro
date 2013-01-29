@@ -27,7 +27,8 @@ HEADERS  += mainwindow.h \
     figure.h \
     paint_utils.h \
     selection.h \
-    shape.h
+    shape.h \
+    debug_utils.h
 
 FORMS    += mainwindow.ui
 

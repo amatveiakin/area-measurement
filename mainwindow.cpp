@@ -1,5 +1,3 @@
-#include <cassert>
-
 #include <QFileDialog>
 #include <QFontDialog>
 #include <QImageReader>
@@ -188,7 +186,7 @@ void MainWindow::doOpenFile(const QString& filename)
 
 void MainWindow::doSaveFile(const QString& filename)
 {
-  assert(canvasWidget);
+  ASSERT_RETURN(canvasWidget);
   bool ok = canvasWidget->getModifiedImage().save(filename);
   if (ok)
     ui->statusBar->showMessage(QString::fromUtf8("Файл успешно сохранён"), 5000);
@@ -252,7 +250,7 @@ void MainWindow::openFile()
 void MainWindow::openRecentFile()
 {
   QAction* triggeredAction = qobject_cast<QAction*>(sender());
-  assert(triggeredAction);
+  ASSERT_RETURN(triggeredAction);
   doOpenFile(triggeredAction->text());
 }
 
@@ -283,12 +281,12 @@ void MainWindow::updateMode(QAction* modeAction)
     return setMode(RECTANGLE);
   if (modeAction == measurePolygonAreaAction)
     return setMode(POLYGON);
-  abort();
+  ERROR_RETURN();
 }
 
 void MainWindow::toggleEtalonDefinition(bool isDefiningEtalon)
 {
-  assert(canvasWidget);
+  ASSERT_RETURN(canvasWidget);
   canvasWidget->toggleEtalonDefinition(isDefiningEtalon);
   toggleEtalonModeAction->setChecked(isDefiningEtalon);
 }

@@ -1,5 +1,3 @@
-#include <cassert>
-
 #include <QLineF>
 
 #include "shape.h"
@@ -15,7 +13,7 @@ double segmentLenght(QPointF a, QPointF b)
 
 void assertPolygonIsClosed(QPolygonF polygon)
 {
-  assert(polygon.isEmpty() || polygon.first() == polygon.last());
+  ASSERT_RETURN(polygon.isEmpty() || polygon.first() == polygon.last());
 }
 
 bool testSegmentsCross(QPointF a, QPointF b, QPointF c, QPointF d)
@@ -60,7 +58,7 @@ Shape::Shape(ShapeType shapeType) :
 
 bool Shape::addPoint(QPointF newPoint)
 {
-  assert(!isFinished_);
+  ASSERT_RETURN_V(!isFinished_, true);
   if (!vertices_.isEmpty() && newPoint == vertices_.back())
     return false;
   vertices_.append(newPoint);
@@ -68,7 +66,7 @@ bool Shape::addPoint(QPointF newPoint)
   switch (type_) {
     case SEGMENT:
     case RECTANGLE:
-      assert(vertices_.size() <= 2);
+      ASSERT_RETURN_V(vertices_.size() <= 2, true);
       isFinished_ = (vertices_.size() == 2);
       return isFinished_;
 
@@ -77,14 +75,12 @@ bool Shape::addPoint(QPointF newPoint)
     case POLYGON:
       return false;
   }
-  abort();
+  ERROR_RETURN_V(true);
 }
 
 void Shape::finish()
 {
-//  if (polygon.isEmpty())
-//    return;
-  assert(!vertices_.empty());
+  ASSERT_RETURN(!vertices_.empty());
   isFinished_ = true;
 }
 
@@ -105,13 +101,13 @@ void Shape::dragVertex(int iVertex, QPointF newPos)
       break;
 
     case RECTANGLE:
-      assert(vertices_.size() == 2);
+      ASSERT_RETURN(vertices_.size() == 2);
       switch (iVertex) {
         case 0: vertices_[0]      = newPos;                                     break;
         case 1: vertices_[0].ry() = newPos.y(); vertices_[1].rx() = newPos.x(); break;
         case 2:                                 vertices_[1]      = newPos;     break;
         case 3: vertices_[0].rx() = newPos.x(); vertices_[1].ry() = newPos.y(); break;
-        default: abort();
+        default: ERROR_RETURN();
       }
       break;
   }
@@ -173,12 +169,12 @@ ShapeCorrectness Shape::correctness() const
     case POLYGON:
       return isSelfintersectingPolygon(polygon()) ? SELF_INTERSECTING_POLYGON : VALID_SHAPE;
   }
-  abort();
+  ERROR_RETURN_V(VALID_SHAPE);
 }
 
 double Shape::length() const
 {
-  assert(dimensionality() == SHAPE_1D);
+  ASSERT_RETURN_V(dimensionality() == SHAPE_1D, 0.);
   QPolygonF p = polygon();
   double result = 0.;
   for (int i = 0; i < p.size() - 1; i++)
@@ -188,7 +184,7 @@ double Shape::length() const
 
 double Shape::area() const
 {
-  assert(dimensionality() == SHAPE_2D);
+  ASSERT_RETURN_V(dimensionality() == SHAPE_2D, 0.);
   QPolygonF p = polygon();
   assertPolygonIsClosed(p);
   double result = 0.;

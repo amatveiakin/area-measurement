@@ -7,7 +7,6 @@
 // TODO: won't it be easier to use weak pointers (e.g., QPointers) to figures?
 // TODO: reduce number of digits after the decimal point
 
-#include <cassert>
 #include <cmath>
 
 #include <QInputDialog>
@@ -109,7 +108,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
       }
       bool polygonFinished = activeFigure_->addPoint(originalPointUnderMouse_);
       if (polygonFinished)
-        finishPlotting();
+        finishDrawing();
     }
     updateAll();
   }
@@ -151,7 +150,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
 void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
   if (event->buttons() == Qt::LeftButton)
-    finishPlotting();
+    finishDrawing();
   event->accept();
 }
 
@@ -185,12 +184,18 @@ bool CanvasWidget::hasEtalon() const
 
 QPixmap CanvasWidget::getModifiedImage()
 {
+  Selection oldSelection_ = selection_;
+  Selection oldHover = hover_;
   int oldIScale = iScale_;
   iScale_ = acceptableScales_.indexOf(1.00);
+  selection_.clear();
+  hover_.clear();
   scaleChanged();
   QPixmap resultingImage(size());
   render(&resultingImage);
   iScale_ = oldIScale;
+  selection_ = oldSelection_;
+  hover_ = oldHover;
   scaleChanged();
   return resultingImage;
 }
@@ -215,7 +220,7 @@ void CanvasWidget::toggleRuler(bool showRuler)
 
 void CanvasWidget::addActiveFigure()
 {
-  assert(!activeFigure_);
+  ASSERT_RETURN(!activeFigure_);
   figures_.append(Figure(shapeType_, isDefiningEtalon_, this));
   activeFigure_ = &figures_.last();
 }
@@ -230,9 +235,9 @@ void CanvasWidget::removeFigure(const Figure* figure)
   if (activeFigure_ == figure)
     activeFigure_ = 0;
   if (selection_.figure == figure)
-    selection_.reset();
+    selection_.clear();
   if (hover_.figure == figure)
-    hover_.reset();
+    hover_.clear();
 
   bool erased = false;
   for (auto it = figures_.begin(); it != figures_.end(); ++it) {
@@ -242,7 +247,7 @@ void CanvasWidget::removeFigure(const Figure* figure)
       break;
     }
   }
-  assert(erased);
+  ASSERT_RETURN(erased);
 }
 
 
@@ -293,7 +298,7 @@ void CanvasWidget::updateHover()
 {
   Selection newHover;
   if (activeFigure_) {
-    newHover.reset();
+    newHover.clear();
   }
   else {
     SelectionFinder selectionFinder(pointUnderMouse_);
@@ -320,7 +325,7 @@ void CanvasWidget::updateStatus()
 
 void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
 {
-  assert(newEtalonFigure && newEtalonFigure->isFinished());
+  ASSERT_RETURN(newEtalonFigure && newEtalonFigure->isFinished());
   bool isResizing = (etalonFigure_ == newEtalonFigure);
   etalonFigure_ = newEtalonFigure;
   const Shape originalShapeDrawn = newEtalonFigure->originalShape();
@@ -340,7 +345,7 @@ void CanvasWidget::defineEtalon(Figure* newEtalonFigure)
   if (!isResizing)
     etalonMetersSize_ = QInputDialog::getDouble(this, mainWindow_->appName(), prompt, 1., 0.001, 1e9, 3, &userInputIsOk);
   if (originalShapeDrawn.isValid() && originalEtalonPixelLength > 0. && userInputIsOk) {
-    double etalonMetersLength;
+    double etalonMetersLength = 0.;
     switch (originalShapeDrawn.dimensionality()) {
       case SHAPE_1D: etalonMetersLength = etalonMetersSize_;            break;
       case SHAPE_2D: etalonMetersLength = std::sqrt(etalonMetersSize_); break;
@@ -363,9 +368,9 @@ void CanvasWidget::clearEtalon(bool invalidateOnly)
   metersPerPixel_ = 0.;
 }
 
-void CanvasWidget::finishPlotting()
+void CanvasWidget::finishDrawing()
 {
-  assert(activeFigure_);
+  ASSERT_RETURN(activeFigure_);
   activeFigure_->finish();
   Figure *oldActiveFigure = activeFigure_;
   activeFigure_ = 0;

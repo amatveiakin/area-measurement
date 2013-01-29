@@ -91,7 +91,7 @@ private:
   void updateStatus();
   void defineEtalon(Figure* etalonFigure);
   void clearEtalon(bool invalidateOnly = false);
-  void finishPlotting();
+  void finishDrawing();
   void resetAll();
   void scaleChanged();
   void updateAll();

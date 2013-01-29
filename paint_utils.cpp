@@ -1,7 +1,6 @@
-#include <cassert>
-
 #include <QPainter>
 
+#include "debug_utils.h"
 #include "paint_utils.h"
 
 
@@ -37,7 +36,7 @@ TextDrawer::~TextDrawer()
 
 TextDrawer& TextDrawer::operator=(const TextDrawer &other)
 {
-  assert(workDone_);
+  ASSERT_RETURN_V(workDone_, *this);
   painter_ = other.painter_;
   text_ = other.text_;
   pos_ = other.pos_;

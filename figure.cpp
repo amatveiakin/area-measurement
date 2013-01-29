@@ -1,4 +1,3 @@
-#include <cassert>
 #include <cmath>
 
 #include <QPainter>
@@ -160,7 +159,7 @@ QString Figure::statusString() const
       return QString::fromUtf8("Многоугольник не должен самопересекаться!");
     }
   }
-  assert(false);
+  ERROR_RETURN_V(QString());
 }
 
 

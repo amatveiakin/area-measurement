@@ -21,7 +21,7 @@ struct Selection
 
   Selection();
 
-  void reset();
+  void clear();
   void setFigure(Figure* figure__);
   void setVertex(Figure* figure__, int iVertex__);
   void setInscription(Figure* figure__);
