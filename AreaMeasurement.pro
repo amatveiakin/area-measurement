@@ -9,8 +9,6 @@ QT       += core gui
 TARGET = AreaMeasurement
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -std=c++0x
-
 
 SOURCES += main.cpp\
         mainwindow.cpp \

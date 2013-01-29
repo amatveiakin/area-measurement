@@ -250,7 +250,7 @@ void CanvasWidget::removeFigure(const Figure* figure)
     hover_.clear();
 
   bool erased = false;
-  for (auto it = figures_.begin(); it != figures_.end(); ++it) {
+  for (FigureIter it = figures_.begin(); it != figures_.end(); ++it) {
     if (&(*it) == figure) {
       figures_.erase(it);
       erased = true;
@@ -312,7 +312,7 @@ void CanvasWidget::updateHover()
   }
   else {
     SelectionFinder selectionFinder(pointUnderMouse_);
-    for (auto it = figures_.begin(); it != figures_.end(); ++it)
+    for (FigureIter it = figures_.begin(); it != figures_.end(); ++it)
       if (it->isFinished())
         it->testSelection(selectionFinder);
     newHover = selectionFinder.bestSelection();

@@ -33,6 +33,8 @@ public slots:
   void toggleRuler(bool showRuler);
 
 private:
+  typedef QLinkedList<Figure>::Iterator FigureIter;
+
   // Global
   MainWindow* mainWindow_;
   QScrollArea* scrollArea_;
