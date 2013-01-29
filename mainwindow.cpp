@@ -156,14 +156,16 @@ QString MainWindow::getImageFormatsFilter() const
 
 void MainWindow::doOpenFile(const QString& filename)
 {
+  recentFiles.removeAll(filename);
+
   QPixmap image;
   if (!image.load(filename)) {
     QMessageBox::warning(this, appName(), QString::fromUtf8("Не могу открыть изображение «%1».").arg(filename));
+    updateOpenRecentMenu();
     return;
   }
 
   openedFile = filename;
-  recentFiles.removeAll(filename);
   recentFiles.prepend(filename);
   if (recentFiles.size() > maxRecentDocuments)
     recentFiles.erase(recentFiles.begin() + maxRecentDocuments, recentFiles.end());
