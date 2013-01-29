@@ -8,6 +8,8 @@
 #include "selection.h"
 
 
+const int sizeOutputPrecision = 4;
+
 const QString linearUnitSuffix = QString::fromUtf8("м");
 const QString squareUnitSuffix = linearUnitSuffix + QString::fromUtf8("²");
 
@@ -189,11 +191,11 @@ QString Figure::getSizeString(ShapeCorrectness& correctness) const
       switch (activeShape.dimensionality()) {
         case SHAPE_1D: {
           double length = activeShape.length() * canvas_->originalMetersPerPixel_;
-          return QString("%1 %2").arg(length).arg(linearUnitSuffix);
+          return QString("%1 %2").arg(length, 0, 'g', sizeOutputPrecision).arg(linearUnitSuffix);
         }
         case SHAPE_2D: {
           double area = activeShape.area() * sqr(canvas_->originalMetersPerPixel_);
-          return QString("%1 %2").arg(area).arg(squareUnitSuffix);
+          return QString("%1 %2").arg(area, 0, 'g', sizeOutputPrecision).arg(squareUnitSuffix);
         }
       }
       break;
