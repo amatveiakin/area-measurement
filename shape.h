@@ -20,6 +20,7 @@ public:
   bool isEmpty() const                  { return vertices_.isEmpty(); }
   bool isFinished() const               { return isFinished_; }
   bool isValid() const                  { return correctness() == VALID_SHAPE; }
+  int nVertices() const                 { return vertices().size(); }
   QPolygonF vertices() const;
   QPolygonF polygon() const;
   ShapeCorrectness correctness() const;

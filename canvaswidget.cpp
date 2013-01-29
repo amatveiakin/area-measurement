@@ -3,7 +3,7 @@
 // TODO: polygon editing: move caption, change color, move segments (?), add points (?), delete points (?)
 // TODO: set scale by two points GPS coordinates
 // TODO: result printing
-// TODO: make it possible to reset selection; perhaps, it's time to use 3 modes instead of 2: normal draw, draw etalon, edit?
+// TODO: perhaps, it's time to use 3 modes instead of 2: normal draw, draw etalon, edit?
 // TODO: won't it be easier to use weak pointers (e.g., QPointers) to figures?
 // TODO: reduce number of digits after the decimal point
 
@@ -120,9 +120,10 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event)
   event->accept();
 }
 
-void CanvasWidget::mouseReleaseEvent(QMouseEvent* /*event*/)
+void CanvasWidget::mouseReleaseEvent(QMouseEvent* event)
 {
   updateHover();
+  event->accept();
 }
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
@@ -146,11 +147,20 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event)
   event->accept();
 }
 
-// TODO: deal with case when double-click is the first click
 void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
-  if (event->buttons() == Qt::LeftButton)
-    finishDrawing();
+  if (event->buttons() == Qt::LeftButton) {
+    if (activeFigure_) {
+      if (activeFigure_->originalShape().nVertices() == 1) {
+        removeFigure(activeFigure_);
+        selection_.clear();
+        updateAll();
+      }
+      else {
+        finishDrawing();
+      }
+    }
+  }
   event->accept();
 }
 
